@@ -235,7 +235,7 @@ long_data <- subset(analytic_data, select = c('age','id_batch','id_feedfirm', 'i
                                               'indoor_min_mintemp','indoor_min_maxtemp','indoor_max_mintemp','indoor_max_maxtemp',
                                               'R2_food','food_inter','food_age2','food_age','frequent_month','average_food','sd_food','birds_m_sqr',
                                               'bird_r2','bird_cons','bird_slope','bird_slope2','water_r2','water_cons','water_slope','water_slope2',
-                                              'slaughter_age','n_of_chicken', 'average_water', 'sd_water'))
+                                              'slaughter_age','n_of_chicken', 'average_water', 'sd_water', 'hybrid'))
 
 
 # Reshape from long to wide 

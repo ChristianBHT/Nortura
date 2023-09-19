@@ -77,7 +77,7 @@ temperature_data$date <- as.character(temperature_data$date)
 #Find duplications and select those with best quality (temperature)
 temp_data_selected <- temperature_data %>%
   group_by(id_batch, date) %>% # Group by id_batch and date
-  slice(which.min(qualityCode)) # Filter to keep only the best quality
+  slice_min(qualityCode) # Filter to keep only the best quality
 
 dups <- duplicated(temperature_data[, c("id_batch", "date")]) | 
         duplicated(temperature_data[, c("id_batch", "date")], fromLast = TRUE)
@@ -93,7 +93,7 @@ colnames(temp_df) <-  c('id_batch', 'date', 'out_temp')
 #Find duplications and select those with best quality (humiditiy)
 humi_data_selected <- humidity_data %>%
   group_by(id_batch, date) %>% # Group by id_batch and date
-  slice(which.min(qualityCode)) # Filter to keep only the best quality
+  slice_min(qualityCode) # Filter to keep only the best quality
 
 dups <- duplicated(humidity_data[, c("id_batch", "date")]) | 
         duplicated(humidity_data[, c("id_batch", "date")], fromLast = TRUE)
@@ -135,6 +135,11 @@ analysis_df$age <- as.numeric(analysis_df$age)
 # Remove duplicated rows
 analysis_df <- analysis_df[!duplicated(analysis_df), ]
 
-save(analysis_df,file="analysis_df.Rda")
 
+hybrid <- subset(DaggamleKyllinger, select = c("FK_Innsett_Dim", "Hybrid"))
+colnames(hybrid) <- c("id_batch", "hybrid")
+
+analysis_df <- merge(analysis_df, hybrid, by = 'id_batch')
+
+save(analysis_df,file="analysis_df.Rda")
 

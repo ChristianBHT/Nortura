@@ -11,18 +11,12 @@ setwd("C:/Users/christian.thorjussen/Project Nortura/")
 rm(list = ls())
 load(file="data_cleaned.Rda")
 
-table(data$chicken_type)
-
-#List number of batches in data
-n_distinct(data$id_batch)
-
 #This subscript estimates a latent growth model, where the aim is to use the latent variables as measures of growth rates and variation of growth
 #Create data set with id age and weight of chicken
 long_df <-  subset(data, select = c(id_batch, age, weight))
 #Create data set with chicken types
 type <- subset(data, select = c(id_batch, chicken_type))
 #Reshape data
-long_df
 wide_df <- reshape(long_df, idvar = "id_batch", timevar = "age", direction = "wide")
 #Remove duplicates from type data
 type <- distinct(type)

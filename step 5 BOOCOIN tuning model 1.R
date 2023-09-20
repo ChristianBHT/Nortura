@@ -8,11 +8,18 @@ library(stringr)
 library(randomForest)
 library(xgboost)
 library(boot)
+rm(list = ls())
 
 setwd("C:/Users/christian.thorjussen/Project Nortura/")
-rm(list = ls())
+source("C:/broiler_acites/ascites_case/step 1 merging dataframe.R")
+source("C:/broiler_acites/ascites_case/step 3 data cleaning.R")
+source("C:/broiler_acites/ascites_case/step 4a modeling growth curves.R")
+source("C:/broiler_acites/ascites_case/step 4c data management.R")
+
 load("wide_data_for_analysis.Rda")
 wide_data$feed_name <- str_replace(wide_data$feed_name, "o?=", "aa")
+# Assuming your data frame is named wide_data
+wide_data <- subset(wide_data, hybrid == "Ross 308")
 
 DAGmodell <- dagitty('dag {
 bb="-4.723,-5.908,5.144,4.316"
@@ -87,10 +94,13 @@ start_weight -> Growth_sqr
 plot(DAGmodell)
 impliedConditionalIndependencies(DAGmodell)
 
-# Birds p m-sqr ??? Food consumption | Feed mix
-# Birds p m-sqr b _||_ Food consumption | Chicken type
+# Birds p m-sqr _||_ Food consumption | Feed mix
 # Birds p m-sqr b _||_ Water consumption | Feed mix, Month
-# Birds p m-sqr b _||_ Water consumption | Chicken type
+# Kg per m-sqr _||_ Water consumption | Feed mix, Month
+# Kg per m-sqr _||_ Water consumption | Feed mix, Month
+# Feed mix ⊥ Kg per m-sqr | Prod type
+# Fdcn _||_ Kpm- | Chct
+# Fdcn _||_ Kpm- | Fdmx
 
 
 #Create a feed_group variable instead of feed type since it has so many levels

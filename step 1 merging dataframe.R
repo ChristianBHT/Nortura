@@ -1,7 +1,7 @@
-install.packages("usethis")
-usethis::use_git_config(user.name="Christian Thorjussen", user.email="christianbern@gmail.com")
-usethis::create_github_token()
-gitcreds::gitcreds_set()
+#install.packages("usethis")
+#usethis::use_git_config(user.name="Christian Thorjussen", user.email="christianbern@gmail.com")
+#usethis::create_github_token()
+#gitcreds::gitcreds_set()
 
 
 
@@ -14,6 +14,8 @@ load("raw data/Produksjonsdata.Rdata")
 load('Temperature.Rdata')
 load("Humidity.Rdata")
 load("raw data/DaggamleKyllinger.Rdata")
+load("raw data/Handling.Rdata")
+
 table(DaggamleKyllinger$Hybrid)
 day_data <- data.frame(Produksjonsdata$PK_Produksjonsdata_Fak,
                    Produksjonsdata$FK_Innsett_Dim,
@@ -139,7 +141,11 @@ analysis_df <- analysis_df[!duplicated(analysis_df), ]
 hybrid <- subset(DaggamleKyllinger, select = c("FK_Innsett_Dim", "Hybrid"))
 colnames(hybrid) <- c("id_batch", "hybrid")
 
+handel <- subset(DaggamleKyllinger, select = c("FK_Innsett_Dim", "Hybrid"))
+colnames(hybrid) <- c("id_batch", "hybrid")
+
+
 analysis_df <- merge(analysis_df, hybrid, by = 'id_batch')
 
 save(analysis_df,file="analysis_df.Rda")
-
+table(analysis_df$hybrid)

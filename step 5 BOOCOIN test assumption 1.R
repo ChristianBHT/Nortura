@@ -104,7 +104,7 @@ impliedConditionalIndependencies(DAGmodell)
 
 
 #Create a feed_group variable instead of feed type since it has so many levels
-levels = 10  # Set the number of levels other than other
+levels = 7  # Set the number of levels other than other
 wide_data$feed_group = fct_lump_n(wide_data$feed_name, n = levels, other_level = "other")
 
 wide_data$feed_group = as.factor(wide_data$feed_group)
@@ -163,7 +163,7 @@ for (i in 1:200){
 # Bind the dummy variables to the original data frame
   data <- cbind(data, dummy_vars)
   data <- subset(data, select = -feed_group)
-  colnames(data) <- c('average_food', 'birds_m_sqr', 'ftype1', 'ftype2', 'ftype3', 'ftype4', 'ftype5',  'ftype6', 'ftype7', 'ftype8', 'ftype9')
+  colnames(data) <- c('average_food', 'birds_m_sqr', 'ftype1', 'ftype2', 'ftype3', 'ftype4', 'ftype5',  'ftype6', 'ftype7')
 
 
   # Split the data into training and testing sets
@@ -225,7 +225,6 @@ boocoin <- function(data, index, p){
   #Create the shuffled variable
   resample$shuffled_bird = sample(resample$birds_m_sqr)
    
-
   #XGBoost
   #Create a data frame with the month variable
   food <- data.frame(food = resample$feed_group)
@@ -239,7 +238,7 @@ boocoin <- function(data, index, p){
   # Bind the dummy variables to the original data frame
   resample <- cbind(resample, dummy_vars)
   data_1 <- subset(resample, select = -c(feed_group, shuffled_bird))
-  colnames(data_1) <- c('average_food', 'birds_m_sqr', 'ftype1', 'ftype2', 'ftype3', 'ftype4', 'ftype5',  'ftype6', 'ftype7', 'ftype8', 'ftype9','ftype10' )
+  colnames(data_1) <- c('average_food', 'birds_m_sqr', 'ftype1', 'ftype2', 'ftype3', 'ftype4', 'ftype5',  'ftype6', 'ftype7' )
   
   #Data Partition
   #Partitioning data into training and test
@@ -267,7 +266,7 @@ boocoin <- function(data, index, p){
   XGB_R2_1 <- cor(test.target, predictions) ^ 2
   
   data_2 <- subset(resample, select = -c(feed_group, birds_m_sqr))
-  colnames(data_2) <- c('average_food', 'shuffled_bird', 'ftype1', 'ftype2', 'ftype3', 'ftype4', 'ftype5',  'ftype6', 'ftype7', 'ftype8', 'ftype9','ftype10' )
+  colnames(data_2) <- c('average_food', 'shuffled_bird', 'ftype1', 'ftype2', 'ftype3', 'ftype4', 'ftype5',  'ftype6', 'ftype7')
   
   #Data Partition
   #Partitioning data into training and test
@@ -301,198 +300,16 @@ boocoin <- function(data, index, p){
 }
 
 N <- nrow(data) #number of observations in data set
-R = 1000 #Number of bootstrap replica
+R = 10000 #Number of bootstrap replica
 
 dirichlet <- matrix( rexp(N * R, 1) , ncol = N, byrow = TRUE) #Creating a matrix of dirichlet weights 
 dirichlet_w <- dirichlet / rowSums(dirichlet)
 
 bayesian_boot <- boot(data=data, statistic = boocoin, weights = dirichlet_w, R=rep(1,R), p=0.85) #Bootstrapping 
-hist(bayesian_boot$t, breaks = 30,  freq = FALSE, main = " ", xlab = "Difference in R-Squared", col = "lightblue")
-test_1_results <- c(mean(bayesian_boot$t), 
-                    2*pnorm(abs(mean(bayesian_boot$t)/sd(bayesian_boot$t) ), lower.tail = FALSE),
-                    quantile(bayesian_boot$t, probs = 0.025),
-                    quantile(bayesian_boot$t, probs = 0.975))
-test_1_results
-
-# Acidity increase percentage = (10^(pH2 - pH1) - 1) * 100
-#After adding arrow from birds per square meter and then do DAG simplification
-simplified_DAG <- dagitty('dag{
-  bb="-4.723,-5.908,5.144,4.316"
-  "Birds p m-sqr" [pos="-3.239,-2.262"]
-  "Chicken type" [pos="2.266,0.682"]
-  "Feed mix" [exposure,pos="0.510,3.444"]
-  "Food consumption" [pos="-3.246,-1.005"]
-  "Indoor Temperature" [pos="-3.253,2.018"]
-  "Outdoor temperature" [pos="-3.740,0.851"]
-  "Water consumption" [pos="-3.253,-0.077"]
-  Ascites [outcome,pos="0.489,-2.058"]
-  Farm [pos="2.266,-0.700"]
-  Growth [pos="-2.096,-3.610"]
-  Month [pos="2.280,-1.934"]
-  Slaughterhouse [adjusted,pos="0.489,-3.983"]
-  "Birds p m-sqr" -> "Food consumption"
-  "Birds p m-sqr" -> Ascites
-  "Chicken type" -> "Birds p m-sqr"
-  "Chicken type" -> "Feed mix"
-  "Chicken type" -> Ascites
-  "Chicken type" -> Growth
-  "Feed mix" -> "Food consumption"
-  "Feed mix" -> "Water consumption"
-  "Feed mix" -> Ascites
-  "Feed mix" -> Growth
-  "Food consumption" -> Ascites
-  "Food consumption" -> Growth
-  "Indoor Temperature" -> "Water consumption"
-  "Indoor Temperature" -> Ascites
-  "Indoor Temperature" -> Growth
-  "Outdoor temperature" -> "Indoor Temperature"
-  "Outdoor temperature" -> "Water consumption"
-  "Outdoor temperature" -> Ascites
-  "Water consumption" -> Ascites
-  "Water consumption" -> Growth
-  Farm -> "Birds p m-sqr"
-  Farm -> "Feed mix"
-  Farm -> "Indoor Temperature"
-  Farm -> Ascites
-  Farm -> Growth
-  Growth -> Ascites
-  Month -> "Feed mix"
-  Month -> Ascites
-  Month -> Growth
-  Slaughterhouse -> Ascites
-}')
-
-plot(simlified_DAG)
-
-impliedConditionalIndependencies(simlified_DAG)
 
 
+plot1 <- hist(bayesian_boot$t[,3], xlim = range(0, 1), breaks = 60,  freq = FALSE, main = " ", xlab = "Difference in R-Squared", col = "lightblue")
 
-#And then simplify even more
-supersimple_DAG <- dagitty('dag {
-bb="-4.19,-4.371,4.28,4.084"
-"Birds p m-sqr" [pos="-2.037,-1.309"]
-"Chicken type" [pos="0.900,-1.262"]
-"Feed mix" [exposure,pos="0.135,1.884"]
-"Food consumption" [pos="-2.025,-0.467"]
-"Indoor Temperature" [pos="-1.983,1.135"]
-"Outdoor temperature" [pos="-1.953,1.893"]
-"Water consumption" [pos="-0.948,1.902"]
-Ascites [outcome,pos="0.094,0.040"]
-Farm [pos="0.894,-0.410"]
-Growth [pos="-1.995,0.267"]
-Month [pos="0.906,0.376"]
-Slaughterhouse [adjusted,pos="0.912,1.275"]
-"Birds p m-sqr" -> "Food consumption"
-"Birds p m-sqr" -> Ascites
-"Chicken type" -> "Feed mix"
-"Chicken type" -> Ascites
-"Feed mix" -> "Food consumption"
-"Feed mix" -> "Water consumption"
-"Feed mix" -> Ascites
-"Feed mix" -> Growth
-"Food consumption" -> Ascites
-"Food consumption" -> Growth
-"Indoor Temperature" -> Ascites
-"Indoor Temperature" -> Growth
-"Outdoor temperature" -> "Water consumption"
-"Outdoor temperature" -> Ascites
-"Water consumption" -> Ascites
-"Water consumption" -> Growth
-Farm -> "Feed mix"
-Farm -> Ascites
-Growth -> Ascites
-Month -> "Feed mix"
-Month -> Ascites
-Slaughterhouse -> Ascites
-}
-')
-
-plot(supersimple_DAG)
-
-impliedConditionalIndependencies(supersimple_DAG)
-
-
-
-
-
-
-
-#And then simplify even more
-simplified_DAG <- dagitty('dag {
-bb="-4.723,-5.908,5.144,4.316"
-"Birds p m-sqr" [pos="-2.761,-1.840"]
-"Chicken type" [pos="3.292,3.308"]
-"Food per bird" [pos="-3.112,1.610"]
-"Growth feed type" [exposure,pos="0.838,3.422"]
-"Indoor Temperature" [pos="-2.217,3.750"]
-"Indoor humidity" [pos="-2.754,3.048"]
-"Kg per m-sqr" [pos="-3.298,-1.091"]
-"Outdoor humidity" [pos="2.642,-2.036"]
-"Outdoor temperature" [pos="2.656,-0.054"]
-"Prevalence Acsites" [outcome,pos="0.489,-2.058"]
-"Slaughter age" [pos="-2.375,-2.520"]
-"Water per bird" [pos="-2.926,2.335"]
-CO2 [latent,pos="-3.291,0.863"]
-Growth_linear [pos="-1.921,-3.100"]
-Growth_sqr [pos="-0.925,-4.130"]
-Month [pos="3.263,2.165"]
-Slaughterhouse [adjusted,pos="0.489,-3.983"]
-start_weight [pos="-1.399,-3.700"]
-"Birds p m-sqr" -> "Kg per m-sqr"
-"Birds p m-sqr" -> "Prevalence Acsites"
-"Chicken type" -> "Birds p m-sqr"
-"Chicken type" -> "Growth feed type"
-"Chicken type" -> "Kg per m-sqr"
-"Chicken type" -> "Prevalence Acsites"
-"Chicken type" -> "Slaughter age"
-"Chicken type" -> Growth_linear
-"Food per bird" -> "Prevalence Acsites"
-"Food per bird" -> Growth_linear
-"Growth feed type" -> "Food per bird"
-"Growth feed type" -> "Prevalence Acsites"
-"Growth feed type" -> "Water per bird"
-"Growth feed type" -> Growth_linear
-"Growth feed type" -> Growth_sqr
-"Growth feed type" -> start_weight
-"Indoor Temperature" -> "Indoor humidity"
-"Indoor Temperature" -> "Prevalence Acsites"
-"Indoor Temperature" -> "Water per bird"
-"Indoor Temperature" -> Growth_linear
-"Indoor humidity" -> "Prevalence Acsites"
-"Kg per m-sqr" -> "Prevalence Acsites"
-"Outdoor humidity" -> "Indoor humidity"
-"Outdoor humidity" -> "Prevalence Acsites"
-"Outdoor temperature" -> "Indoor Temperature"
-"Outdoor temperature" -> "Indoor humidity"
-"Outdoor temperature" -> "Outdoor humidity"
-"Outdoor temperature" -> "Prevalence Acsites"
-"Outdoor temperature" -> "Water per bird"
-"Outdoor temperature" -> CO2
-"Slaughter age" -> "Prevalence Acsites"
-"Water per bird" -> "Prevalence Acsites"
-"Water per bird" -> Growth_linear
-CO2 -> "Prevalence Acsites"
-Growth_linear -> "Prevalence Acsites"
-Growth_linear -> "Slaughter age"
-Growth_sqr -> "Prevalence Acsites"
-Month -> "Growth feed type"
-Month -> "Indoor humidity"
-Month -> "Outdoor humidity"
-Month -> "Outdoor temperature"
-Month -> "Prevalence Acsites"
-Month -> CO2
-Month -> Growth_linear
-Slaughterhouse -> "Prevalence Acsites"
-start_weight -> "Prevalence Acsites"
-start_weight -> Growth_linear
-start_weight -> Growth_sqr
-}')
-
-plot(simplified_DAG)
-
-
-
-
-
-
+png("C:/broiler_acites/ascites_case/Results/plot1_test_food_birds_feed.png", width = 800, height = 600)  # Adjust width and height as needed
+plot(plot1, col = "lightblue", main = " ", xlab = "Difference in R-Squared", xlim = range(0, 1))
+dev.off()

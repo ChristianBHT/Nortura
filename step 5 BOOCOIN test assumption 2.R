@@ -1,4 +1,5 @@
-# Birds p m-sqr b _||_ Water consumption | Feed mix, Month
+# Food consumption ⊥ Kg per m-sqr | Birds p m-sqr, Prod type
+# Food consumption ⊥ Kg per m-sqr | Birds p m-sqr, Feed mix
 
 library(dagitty)
 library(tidyverse)
@@ -23,96 +24,85 @@ wide_data$feed_name <- str_replace(wide_data$feed_name, "o?=", "aa")
 # Assuming your data frame is named wide_data
 wide_data <- subset(wide_data, hybrid == "Ross 308")
 
-
-
-
-
-#Create a feed_group variable instead of feed type since it has so many levels
-levels = 7  # Set the number of levels other than other
-wide_data$feed_group = fct_lump_n(wide_data$feed_name, n = levels, other_level = "other")
-
-wide_data$feed_group = as.factor(wide_data$feed_group)
-wide_data$frequent_month = as.factor(wide_data$frequent_month)
+wide_data$prod_type = as.factor(wide_data$prod_type)
+hist(wide_data$max_kg)
 
 ##########################################
-# Birds p m-sqr b _||_ Water consumption | Feed mix, Month
+# # Food consumption ⊥ Kg per m-sqr | Birds p m-sqr, Prod type
 ##########################################
 randomf <- list()
 bag <- list()
 XGboost <- list()
 
-for (i in 1:200){
-  data <- subset(wide_data, select = c('average_food','birds_m_sqr', 'feed_group', 'frequent_month'))
+for (i in 1:100){
+  data <- subset(wide_data, select = c('max_kg', 'average_food','birds_m_sqr', 'prod_type'))
   data <- na.omit(data)
   
   #Partitioning data into training and test
-  inTraining <- createDataPartition(data$feed_group, p = 0.8, list = FALSE)
+  inTraining <- createDataPartition(data$max_kg, p = 0.8, list = FALSE)
   training <- data[inTraining,]
   testing  <- data[-inTraining,]
   
   #Random Forest
-  rf <- randomForest(average_food ~  birds_m_sqr + feed_group + frequent_month, 
+  rf <- randomForest(max_kg ~  average_food + birds_m_sqr + prod_type, 
                      data=training,
                      ntree=500)
-  test.features <- subset(testing, select=c(birds_m_sqr, feed_group, frequent_month))
-  test.target <- subset(testing, select=average_food)[,1]
+  test.features <- subset(testing, select=c(average_food, birds_m_sqr, prod_type))
+  test.target <- subset(testing, select=max_kg )[,1]
   predictions <- predict(rf, newdata = test.features)
   rf_R2 <- cor(test.target, predictions) ^ 2
   
   #Bagged tree
   bagged <- bagging(
-    average_food ~  birds_m_sqr + feed_group + frequent_month,
+    max_kg ~  average_food + birds_m_sqr + prod_type,
     data = training,
     coob = TRUE,
   )
-  test.features <- subset(testing, select=c(birds_m_sqr, feed_group, frequent_month))
-  test.target <- subset(testing, select=average_food)[,1]
+  test.features <- subset(testing, select=c(average_food, birds_m_sqr, prod_type))
+  test.target <- subset(testing, select=max_kg)[,1]
   predictions <- predict(bagged, newdata = test.features)
   bagged_R2 <- cor(test.target, predictions) ^ 2
   
   #XGBoost
   #Create a data frame with the month variable
-  food <- data.frame(food = data$feed_group)
-  month <- data.frame(month = data$frequent_month)
-  #Create dummy variables for feed variable
-  dummy_vars <- model.matrix(~ factor(food), food)
-  dummy_vars2 <- model.matrix(~ factor(month), month)
+  type <- data.frame(type = data$prod_type)
   
+  #Create dummy variables for feed variable
+  dummy_vars <- model.matrix(~ factor(type), type)
+
   # Remove the intercept column
   dummy_vars <- dummy_vars[, -1]
-  dummy_vars2 <- dummy_vars2[, -1]
   
   # Bind the dummy variables to the original data frame
-  data <- cbind(data, dummy_vars, dummy_vars2)
-  columns_to_exclude <- c("feed_group", "frequent_month")
+  data <- cbind(data, dummy_vars)
+  columns_to_exclude <- c("prod_type")
   
   data <- data[, !names(data) %in% columns_to_exclude]
 
-  colnames(data) <- c('average_food', 'birds_m_sqr', 
-                      'ftype1', 'ftype2', 'ftype3', 'ftype4', 'ftype5',  'ftype6', 'ftype7', 
-                      'month2', 'month3', 'month4', 'month5', 'month6', 'month7', 'month8', 'month9', 'month10', 'month11', 'month12')
+  colnames(data) <- c('max_kg', 'average_food', 'birds_m_sqr', 
+                      'ptype1', 'ptype2', 'ptype3')
   
   
   # Split the data into training and testing sets
-  inTraining <- createDataPartition(data$average_food, p = 0.8, list = FALSE)
+  inTraining <- createDataPartition(data$max_kg, p = 0.8, list = FALSE)
   training <- data[inTraining,]
   testing  <- data[-inTraining,]
   
-  label <- training$average_food
-  training <- as.matrix(training[, !(names(training) %in% c("average_food"))])
+  label <- training$max_kg
+  training <- as.matrix(training[, !(names(training) %in% c("max_kg"))])
   
   # Training XGBoost model
   
   xgb_model <- xgb.train(
     data = xgb.DMatrix(data = training, label = label),
     objective = "reg:squarederror", 
-    nrounds = 20,
+    nrounds = 7,
     eta = 0.3,                      
     max_depth = 7)
   
   # Make predictions on the test set
-  test.target <- testing$average_food
-  testing <- as.matrix(testing[, !(names(testing) %in% c("average_food"))])
+  test.target <- testing$max_kg
+  testing <- as.matrix(testing[, !(names(testing) %in% c("max_kg"))])
   predictions <- predict(xgb_model, as.matrix(testing))
   
   #  Calculate r-squared

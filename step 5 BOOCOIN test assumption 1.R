@@ -265,8 +265,8 @@ data$feed_group <- as.factor(data$feed_group)
 
 boocoin <- function(data, index, p){
   resample <- data[index, ]
-  resample <- data[sample(nrow(data),nrow(data),replace=TRUE),] #Uncomment for testing
-  p = 0.8 #Uncomment for testing
+  #resample <- data[sample(nrow(data),nrow(data),replace=TRUE),] #Uncomment for testing
+  #p = 0.8 #Uncomment for testing
   
   #Create the shuffled variable
   resample$shuffled_avgfood = sample(resample$average_food)
@@ -349,8 +349,8 @@ dirichlet_w <- dirichlet / rowSums(dirichlet)
 bayesian_boot <- boot(data=data, statistic = boocoin, weights = dirichlet_w, R=rep(1,R), p=0.85) #Bootstrapping 
 
 
-plot1 <- hist(bayesian_boot$t[,3], xlim = range(0, 1), breaks = 60,  freq = FALSE, main = " ", xlab = "Difference in R-Squared", col = "lightblue")
+plot1 <- hist(bayesian_boot$t[,3], breaks = 60,  freq = FALSE, main = " ", xlab = "Difference in R-Squared", col = "lightblue")
 
 png("C:/broiler_acites/ascites_case/Results/plot1_test_food_birds_feed.png", width = 800, height = 600)  # Adjust width and height as needed
-plot(plot1, col = "lightblue", main = " ", xlab = "Difference in R-Squared", xlim = range(0, 1))
+plot(plot1, col = "lightblue", main = " ", xlab = "Difference in R-Squared")
 dev.off()

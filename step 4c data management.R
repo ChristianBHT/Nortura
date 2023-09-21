@@ -220,6 +220,12 @@ slaughter_age <- analytic_data %>%
   summarise(slaughter_age = max(age))
 analytic_data <- left_join(analytic_data, slaughter_age, by = 'id_batch')
 
+last_day_weight <- analytic_data %>%
+  group_by(id_batch) %>%
+  summarise(max_kg = max(kg_per_sqr, na.rm = TRUE))
+
+analytic_data <- left_join(analytic_data, last_day_weight, by = 'id_batch')
+
 # Keeping the variables we need 
 # long_data <- subset(analytic_data, select = c('age','id_batch','aceties', 'prod_type', 'leverandoer_nr', 'feed_name','id_slaughterhouse', 
 #                                               'climate_mean_temp','climate_sd_temp', 'climate_min_temp','climate_max_temp', 'asymptote', 'displacement', 'growth_rate', 'growth_r2',
@@ -235,7 +241,7 @@ long_data <- subset(analytic_data, select = c('age','id_batch','id_feedfirm', 'i
                                               'indoor_min_mintemp','indoor_min_maxtemp','indoor_max_mintemp','indoor_max_maxtemp',
                                               'R2_food','food_inter','food_age2','food_age','frequent_month','average_food','sd_food','birds_m_sqr',
                                               'bird_r2','bird_cons','bird_slope','bird_slope2','water_r2','water_cons','water_slope','water_slope2',
-                                              'slaughter_age','n_of_chicken', 'average_water', 'sd_water', 'hybrid'))
+                                              'slaughter_age','n_of_chicken', 'average_water', 'sd_water', 'hybrid', 'max_kg'))
 
 
 # Reshape from long to wide 

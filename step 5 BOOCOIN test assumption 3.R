@@ -24,7 +24,7 @@ load("wide_data_for_analysis.Rda")
 wide_data$feed_name <- str_replace(wide_data$feed_name, "o?=", "aa")
 wide_data$prod_type = as.factor(wide_data$prod_type)
 wide_data <- subset(wide_data, hybrid == "Ross 308")
-# a change
+
 
 ###############################################################
 # Birds p m-sqr ⊥ Water consumption | Prod type
@@ -33,12 +33,11 @@ wide_data <- subset(wide_data, hybrid == "Ross 308")
 #################
 #BOOCOIN testing# 
 #################
-# Food consumption ⊥ Kg per m-sqr | Prod type
 
 ###################
 # Tuning f(x,z) #
 ##################
-data <- subset(wide_data, select = c('birds_m_sqr', 'average_water', 'feed_name', 'frequent_month'))
+data <- subset(wide_data, select = c('birds_m_sqr', 'average_water', 'prod_type'))
 data <- na.omit(data)
 type <- data.frame(type = data$prod_type)
 
@@ -51,18 +50,18 @@ dummy_vars <- dummy_vars[, -1]
 # Bind the dummy variables to the original data frame
 data <- cbind(data, dummy_vars)
 data <- subset(data, select = -prod_type)
-colnames(data) <- c('max_kg', 'average_food', 
+colnames(data) <- c('birds_m_sqr', 'average_food', 
                     'ptype1', 'ptype2', 'ptype3')
 
-label <- data$max_kg
-training <- as.matrix(data[, !(names(data) %in% c("max_kg"))])
+label <- data$birds_m_sqr
+training <- as.matrix(data[, !(names(data) %in% c("birds_m_sqr"))])
 
 
 
 params <- list(
   objective = "reg:squarederror", 
   nrounds = 20,
-  eta = 0.3,                      
+  eta = c(0.1,0.2,0.3),                      
   max_depth = 6
 )
 
@@ -78,7 +77,6 @@ cv <- data.frame(Boosting_Round =  cv_result$evaluation_log$iter,
                  Train_Error = cv_result$evaluation_log$train_rmse_mean, 
                  Test_Error = cv_result$evaluation_log$test_rmse_mean)
 
-
 train_error <- cv_result$evaluation_log$train_rmse_mean
 test_error <- cv_result$evaluation_log$test_rmse_mean
 
@@ -88,24 +86,23 @@ ggplot(cv, aes(x = Boosting_Round)) +
   geom_line(aes(y = Test_Error, color = "Test Error"), size = 1) +
   scale_color_manual(values = c("Train Error" = "blue", "Test Error" = "red")) +
   labs(x = "Boosting Round", y = "Error Rate") +
-  theme_minimal()
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(0, max(cv$Boosting_Round), by = 10))  #
 
 
 
-data <- subset(wide_data, select = c('max_kg', 'average_food', 'prod_type'))
+data <- subset(wide_data, select = c('birds_m_sqr', 'average_water', 'prod_type'))
 data <- na.omit(data)
 data$prod_type <- as.factor(data$prod_type)
 
-boocoin_test_2 <- function(data, index, p){
+boocoin_test_3 <- function(data, index, p){
   resample <- data[index, ]
   # resample <- data[sample(nrow(data),nrow(data),replace=TRUE),] #Uncomment for testing
   # p = 0.8 #Uncomment for testing
-  
+ 
   #Create the shuffled variable
-  resample$shuffled_X = sample(resample$average_food)
-  
+  resample$shuffled_X = sample(resample$average_water)
   #XGBoost
-  #Create a data frame with the month variable
   type <- data.frame(type = resample$prod_type)
   
   #Create dummy variables for feed variable
@@ -117,67 +114,61 @@ boocoin_test_2 <- function(data, index, p){
   # Bind the dummy variables to the original data frame
   resample <- cbind(resample, dummy_vars)
   data_1 <- subset(resample, select = -c(prod_type, shuffled_X))
-  colnames(data_1) <- c('max_kg', 'average_food',
+  colnames(data_1) <- c('birds_m_sqr', 'average_water',
                         'ptype1', 'ptype2', 'ptype3')
   
   
   #Data Partition
   #Partitioning data into training and test
-  inTraining <- createDataPartition(data_1$max_kg, p = p, list = FALSE)
+  inTraining <- createDataPartition(data_1$birds_m_sqr, p = p, list = FALSE)
   training <- data_1[inTraining,]
   testing  <- data_1[-inTraining,]
   
   # Splitting training data into dependent and features
-  label <- training$max_kg
-  training <- as.matrix(training[, !(names(training) %in% c("max_kg"))])
+  label <- training$birds_m_sqr
+  training <- as.matrix(training[, !(names(training) %in% c("birds_m_sqr"))])
   
   xgb_model_1 <- xgb.train(
     data = xgb.DMatrix(data = training, label = label),
     objective = "reg:squarederror", 
-    nrounds = 9,
-    eta = 0.3,                      
+    nrounds = 30,
+    eta = c(0.1,0.2,0.3),                      
     max_depth = 6)
   
   # Make predictions on the test set
-  test.target <- testing$max_kg
-  testing <- as.matrix(testing[, !(names(testing) %in% c("max_kg"))])
+  test.target <- testing$birds_m_sqr
+  testing <- as.matrix(testing[, !(names(testing) %in% c("birds_m_sqr"))])
   predictions <- predict(xgb_model_1, as.matrix(testing))
   
   #  Calculate r-squared
   XGB_R2_1 <- cor(test.target, predictions) ^ 2
   
-  data_2 <- subset(resample, select = -c(prod_type, average_food))
-  colnames(data_2) <- c('max_kg', 'shuffled_X',
+  data_2 <- subset(resample, select = -c(prod_type, average_water)) # Now we are using shuffled_X
+  colnames(data_2) <- c('birds_m_sqr', 'shuffled_X',
                         'ptype1', 'ptype2', 'ptype3')
   
-  
-  #Partitioning data into training and test
-  inTraining <- createDataPartition(data_2$max_kg, p = p, list = FALSE)
+  inTraining <- createDataPartition(data_2$birds_m_sqr, p = p, list = FALSE)
   training <- data_2[inTraining,]
   testing  <- data_2[-inTraining,]
   
   # Splitting training data into dependent and features
-  label <- training$max_kg
-  training <- as.matrix(training[, !(names(training) %in% c("max_kg"))])
+  label <- training$birds_m_sqr
+  training <- as.matrix(training[, !(names(training) %in% c("birds_m_sqr"))])
   
   xgb_model_2 <- xgb.train(
     data = xgb.DMatrix(data = training, label = label),
     objective = "reg:squarederror", 
-    nrounds = 9,
-    eta = 0.3,                      
+    nrounds = 30,
+    eta = c(0.1,0.2,0.3),                      
     max_depth = 6)
   
   # Make predictions on the test set
-  test.target <- testing$max_kg
-  testing <- as.matrix(testing[, !(names(testing) %in% c("max_kg"))])
+  test.target <- testing$birds_m_sqr
+  testing <- as.matrix(testing[, !(names(testing) %in% c("birds_m_sqr"))])
   predictions <- predict(xgb_model_2, as.matrix(testing))
   
   #  Calculate r-squared
   XGB_R2_2 <- cor(test.target, predictions) ^ 2
-  
-  
-  # c(XGB_R2_1, XGB_R2_2 ,XGB_R2_1-XGB_R2_2)
-  
   return(c(XGB_R2_1, XGB_R2_2 ,XGB_R2_1-XGB_R2_2))
 }
 
@@ -187,7 +178,7 @@ R = 10000 #Number of bootstrap replica
 dirichlet <- matrix( rexp(N * R, 1) , ncol = N, byrow = TRUE) #Creating a matrix of dirichlet weights 
 dirichlet_w <- dirichlet / rowSums(dirichlet)
 
-bayesian_boot <- boot(data=data, statistic = boocoin_test_2, weights = dirichlet_w, R=rep(1,R), p=0.85) #Bootstrapping 
+bayesian_boot <- boot(data=data, statistic = boocoin_test_3, weights = dirichlet_w, R=rep(1,R), p=0.85) #Bootstrapping 
 
 plot1 <- hist(bayesian_boot$t[,3], breaks = 60,  freq = FALSE, main = " ", xlab = "Difference in R-Squared", col = "lightblue")
 

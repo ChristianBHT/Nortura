@@ -182,6 +182,6 @@ bayesian_boot <- boot(data=data, statistic = boocoin_test_3, weights = dirichlet
 
 plot1 <- hist(bayesian_boot$t[,3], breaks = 60,  freq = FALSE, main = " ", xlab = "Difference in R-Squared", col = "lightblue")
 
-png("C:/broiler_acites/ascites_case/Results/plot1_test2.png", width = 800, height = 600)  # Adjust width and height as needed
+png("C:/broiler_acites/ascites_case/Results/plot1_test3.png", width = 800, height = 600)  # Adjust width and height as needed
 plot(plot1, col = "lightblue", main = " ", xlab = "Difference in R-Squared", freq = F)
 dev.off()

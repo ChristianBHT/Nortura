@@ -25,6 +25,14 @@ data <- merge(wide_df, type, by = "id_batch")
 data <- data %>%
   clean_names()
 table(data$chicken_type)
+
+# Create a list of variable names
+variable_names <- paste0("weight_", 1:34)
+
+# Loop through each variable and replace 1 with NA
+data[, variable_names] <- lapply(data[, variable_names], function(x) ifelse(x == 1, NA, x))
+
+
 #We start by modeling for the Foredlingskylling (Processed), the model conceptual the same for all chicken types, the only thing we change is 
 #how many days we use for modelling.
 data_proc <- data[data$chicken_type == "Processed",]
@@ -226,7 +234,7 @@ data_gaarden <- merge(data_gaarden, data_gaarden_r2, by = 'id_batch')
    xlab("Age") + 
    ylab("Weight") 
  # 
- p3 <- p3 + geom_line(data=obs_df, aes(x,y)) + ggtitle(paste0("Batch id = ", i, ". Kyllingg??rden"))
+ p3 <- p3 + geom_line(data=obs_df, aes(x,y)) + ggtitle(paste0("Batch id = ", i, ". Kyllinggården"))
  p3
  
 #Hubbard Chicken

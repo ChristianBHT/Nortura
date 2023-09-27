@@ -219,28 +219,43 @@ slaughter_age <- analytic_data %>%
   group_by(id_batch) %>%
   summarise(slaughter_age = max(age))
 analytic_data <- left_join(analytic_data, slaughter_age, by = 'id_batch')
+save(analytic_data,file="analysis_long_data.Rda")
 
+start_weight <- analytic_data %>%
+  group_by(id_batch) %>%
+  summarise(start_weight = min(weight))
+
+
+start_weight$start_weight[start_weight$start_weight <= 20] <- NA #Removing inplausible values of low weight
+
+
+analytic_data <- left_join(analytic_data, start_weight, by = 'id_batch')
 # Keeping the variables we need 
-# long_data <- subset(analytic_data, select = c('age','id_batch','aceties', 'prod_type', 'leverandoer_nr', 'feed_name','id_slaughterhouse', 
-#                                               'climate_mean_temp','climate_sd_temp', 'climate_min_temp','climate_max_temp', 'asymptote', 'displacement', 'growth_rate', 'growth_r2',
-#                                               'climate_max_hum', 'indoor_mean_maxtemp','indoor_mean_mintemp','indoor_sd_maxtemp','indoor_sd_mintemp',
-#                                               'indoor_min_mintemp','indoor_min_maxtemp','indoor_max_mintemp','indoor_max_maxtemp',
-#                                               'R2_food','food_inter','food_age2','food_age','frequent_month','average_food','sd_food','birds_m_sqr',
-#                                               'bird_r2','bird_cons','bird_slope','bird_slope2','water_r2','water_cons','water_slope','water_slope2',
-#                                               'slaughter_age','n_of_chicken'))
 
-long_data <- subset(analytic_data, select = c('age','id_batch','id_feedfirm', 'id_hatchery','aceties', 'prod_type', 'leverandoer_nr', 'feed_name','id_slaughterhouse', 
-                                              'climate_mean_temp','climate_sd_temp', 'climate_min_temp','climate_max_temp', 'intercept', 'growth', 'sqr_growth', 'r2',
-                                              'climate_max_hum', 'indoor_mean_maxtemp','indoor_mean_mintemp','indoor_sd_maxtemp','indoor_sd_mintemp',
-                                              'indoor_min_mintemp','indoor_min_maxtemp','indoor_max_mintemp','indoor_max_maxtemp',
-                                              'R2_food','food_inter','food_age2','food_age','frequent_month','average_food','sd_food','birds_m_sqr',
-                                              'bird_r2','bird_cons','bird_slope','bird_slope2','water_r2','water_cons','water_slope','water_slope2',
-                                              'slaughter_age','n_of_chicken', 'average_water', 'sd_water', 'hybrid'))
-
+long_data <- subset(analytic_data, select = c('id_batch',
+                                'feed_name', #Treatment
+                                'aceties', #Outcome
+                                'prod_type', #Chicken type
+                                'start_weight', #start_weight
+                                'indoor_mean_maxhumidity', #Indoor humidity
+                                'growth', #Growth_linear
+                                'sqr_growth', #Growth_sqr
+                                'indoor_mean_maxtemp', #Indoor Temperature
+                                'frequent_month', #Month
+                                'climate_mean_temp', #Outdoor temperature
+                                'climate_mean_hum',#Outdoor humidity
+                                'id_slaughterhouse', #Slaughterhouse
+                                'average_food', #Food consumption
+                                'average_water', #Water consumption
+                                'birds_m_sqr', #Birds p m-sqr
+                                'kg_per_sqr', #Kg per m-sqr
+                                'n_of_chicken', #Number of chickens
+                                'slaughter_age',
+                                'leverandoer_nr',
+                                'hybrid'))  
 
 # Reshape from long to wide 
 wide_data <-  distinct(long_data, id_batch, .keep_all = TRUE)
-wide_data <- subset(wide_data, select = -age)
 
 save(wide_data,file="wide_data_for_analysis.Rda")
 

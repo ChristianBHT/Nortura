@@ -3,10 +3,8 @@ library(dplyr)
 library(ggplot2)
 library(tidyverse)
 library(broom)
-library(lubridate)
 library(dagitty)
 library(caret)
-library(randomForest)
 library(ipred)
 library(parallel)
 library(boot)
@@ -16,19 +14,33 @@ library(MLmetrics)
 setwd("C:/Users/christian.thorjussen/Project Nortura/")
 rm(list = ls())
 
-#We only need the following variables 
-
 load("wide_data_for_analysis.Rda")
 wide_data$feed_name <- str_replace(wide_data$feed_name, "�", "aa")
 wide_data$feed_name <- str_replace(wide_data$feed_name, "�", "o")
-
-table(wide_data$feed_name)
-
-levels = 3  # Set the number of levels other than other
-wide_data$feed_group = fct_lump_n(wide_data$feed_name, n = levels, other_level = "other")
-table(wide_data$feed_group)
-
+wide_data$feed_name <- str_replace(wide_data$feed_name, "o?=", "aa")
+wide_data <- subset(wide_data, hybrid == "Ross 308")
 data <- wide_data
+
+data$aceties_prev <- 1000*data$aceties/data$n_of_chicken
+
+# Create a panel of scatter plots
+pairs_data <- subset(data, select = c('aceties_prev', 
+                                      'start_weight', 
+                                      'indoor_mean_maxhumidity', 
+                                      'growth',
+                                      'sqr_growth',
+                                      'indoor_mean_maxtemp',
+                                      'climate_mean_temp',
+                                      'climate_mean_hum',
+                                      'average_food'))
+                                      
+pairs(pairs_data, pch = 19, col = "black")
+
+levels = 3  # Set the number of feed types for analysis
+data$feed_group = fct_lump_n(data$feed_name, n = levels, other_level = "other")
+table(data$feed_group)
+
+
 data$feed_group = as.factor(data$feed_group)
 data$prod_type <- as.factor(data$prod_type)
 data$id_slaughterhouse <- as.factor(data$id_slaughterhouse)

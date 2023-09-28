@@ -9,11 +9,12 @@ library(gridExtra)
 
 setwd("C:/Users/christian.thorjussen/Project Nortura/")
 rm(list = ls())
-load(file="data_cleaned.Rda")
+load(file="analysis_df_cleaned.Rda") #142182 observations
 
 #This subscript estimates a latent growth model, where the aim is to use the latent variables as measures of growth rates and variation of growth
 #Create data set with id age and weight of chicken
 long_df <-  subset(data, select = c(id_batch, age, weight))
+long_data <- data
 #Create data set with chicken types
 type <- subset(data, select = c(id_batch, chicken_type))
 #Reshape data
@@ -27,7 +28,7 @@ data <- data %>%
 table(data$chicken_type)
 
 # Create a list of variable names
-variable_names <- paste0("weight_", 1:34)
+variable_names <- paste0("weight_", 1:77)
 
 # Loop through each variable and replace 1 with NA
 data[, variable_names] <- lapply(data[, variable_names], function(x) ifelse(x == 1, NA, x))
@@ -369,16 +370,16 @@ head(data_mcdon)
  p5 <- p5 + geom_line(data=obs_df, aes(x,y)) + ggtitle(paste0("Batch id = ", i, ". McDonalds-kylling"))
  p5
 
-load(file="data_cleaned.Rda")
+
 growth_data <- rbind(select(data_proc, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')), 
                      select(data_grill, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')), 
                      select(data_gaarden, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')), 
                      select(data_mcdon, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')),
                      select(data_hubbard, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')))
 
-data <- merge(data, growth_data, by = "id_batch")
+data <- merge(long_data, growth_data, by = "id_batch")
 
-save(data,file="data_nortura_for_analysis.Rda")
+save(data,file="analysis_df.Rda")
 
 
 

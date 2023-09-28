@@ -7,12 +7,20 @@ library(lubridate)
 library(dagitty)
 setwd("C:/Users/christian.thorjussen/Project Nortura/")
 rm(list = ls())
-load('data_nortura_for_analysis.Rda')
-#load('data_nortura_for_analysis_2.Rda')
-28683 
+load('analysis_df.Rda')
+names(data)[names(data) == "area_x"] <- "area"
+names(data)[names(data) == "aceties_x"] <- "ascites"
+names(data)[names(data) == "type_of_prod_x"] <- "type_production"
+names(data)[names(data) == "total_food_used_x"] <- "total_food_used"
+names(data)[names(data) == "leverandoer_nr_x"] <- "leverandoer_nr"
+names(data)[names(data) == "growth_feed_x"] <- "growth_feed"
+cols_to_keep <- setdiff(names(data), c("area_y", "aceties_y", "type_of_prod_y", "total_food_used_y", "leverandoer_nr_y", "growth_feed_y"))
+data <- data[cols_to_keep]
+data <- data %>%
+  mutate(dead_self = ifelse(id_batch == 15452 & age == 33, 20, dead_self)) # Assume that this entry is a mistake!
 #Extracting the variables we need
 analytic_data <- data
-analytic_data <- distinct(analytic_data, id_batch, id_farmday, .keep_all = TRUE) #Removing duplicated entries by only allowing one combination of age and batch id for each flock 
+#"analytic_data <- distinct(analytic_data, id_batch, id_farmday, .keep_all = TRUE) #Removing duplicated entries by only allowing one combination of age and batch id for each flock 
 #Calculating accumulated dead 
 cumu_dead <- analytic_data %>%
   arrange(id_batch, age) %>%
@@ -21,6 +29,7 @@ cumu_dead <- analytic_data %>%
 analytic_data <- analytic_data %>%
   arrange(id_batch, age)
 analytic_data <- cbind(analytic_data, cumu_dead)
+
 
 #Calculate density of chicken per sqr meter and kilo per square meter
 analytic_data$alive <- analytic_data$n_of_chicken - analytic_data$accum_dead
@@ -34,9 +43,11 @@ feed_name <- read.csv('raw data/Forblanding.csv', sep = ';')
 feed_name <- subset(feed_name, select = c('PK_Forblanding_Dim', 'Forblanding', 'FK_Forfirma_Dim'))
 colnames(feed_name) <- c('growth_feed', 'feed_name', 'FK_feed_firm')
 #merging with our exsiting data 
-analytic_data <- merge(analytic_data, feed_name, by = 'growth_feed')
 analytic_data <- analytic_data[, !duplicated(names(analytic_data))]
-
+analytic_data <- merge(analytic_data, feed_name, by = 'growth_feed')
+cols_to_keep <- setdiff(names(analytic_data), c("FK_feed_firm.x", "feed_name.x", "feed_name.y", "FK_feed_firm.y"))
+analytic_data <- analytic_data[cols_to_keep]
+table(analytic_data$feed_name)
 #Calculating daily water and food consumption per bird 
 analytic_data$water_per_chick <- analytic_data$water_consump/analytic_data$alive
 analytic_data$food_per_chick <- analytic_data$feed_consump/analytic_data$alive
@@ -118,14 +129,15 @@ analytic_data$food_per_chick <- analytic_data$feed_consump/analytic_data$alive
 # analytic_data <- left_join(analytic_data, bird_data, by = "id_batch")
 
 #This chunck of code extracts outdoor climate stats; mean, standard deviation, min and max
-climate_stats <- data %>%
+analytic_data$out_humidity <- as.numeric(analytic_data$out_humidity)
+analytic_data$out_temp <- as.numeric(analytic_data$out_temp)
+
+climate_stats <- analytic_data %>%
               group_by(id_batch) %>%
               summarise(climate_mean_temp = mean(out_temp), 
-                        climate_sd_temp = sd(out_temp), 
                         climate_min_temp = min(out_temp),
                         climate_max_temp = max(out_temp),
                         climate_mean_hum = mean(out_humidity),
-                        climate_sd_hum = sd(out_humidity),
                         climate_min_hum = min(out_humidity),
                         climate_max_hum = max(out_humidity))
 analytic_data <- left_join(analytic_data, climate_stats, by = 'id_batch')
@@ -211,7 +223,8 @@ analytic_data <- left_join(analytic_data, food_stats, by = 'id_batch')
 #Alternative bird data
 birds <-  analytic_data %>%
   group_by(id_batch) %>%
-  summarise(birds_m_sqr = mean(birds_p_m_sqr))
+  summarise(birds_m_sqr = mean(birds_p_m_sqr),
+            kg_m_sqr =  mean(kg_per_sqr))
 
 analytic_data <- left_join(analytic_data, birds, by = 'id_batch')
 
@@ -238,7 +251,7 @@ analytic_data$average_food[analytic_data$average_food == 0] <- NA
 long_data <- subset(analytic_data, select = c('id_batch',
                                 'age',              
                                 'feed_name', #Treatment
-                                'aceties', #Outcome
+                                'ascites', #Outcome
                                 'prod_type', #Chicken type
                                 'start_weight', #start_weight
                                 'indoor_mean_maxhumidity', #Indoor humidity
@@ -252,7 +265,7 @@ long_data <- subset(analytic_data, select = c('id_batch',
                                 'average_food', #Food consumption
                                 'average_water', #Water consumption
                                 'birds_m_sqr', #Birds p m-sqr
-                                'kg_per_sqr', #Kg per m-sqr
+                                'kg_m_sqr', #Kg per m-sqr
                                 'n_of_chicken', #Number of chickens
                                 'slaughter_age',
                                 'leverandoer_nr',

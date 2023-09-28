@@ -1,9 +1,8 @@
 library(tidyverse)
 library(expss)
-
+rm(list = ls())
 setwd("C:/Users/christian.thorjussen/Project Nortura/")
-load("analysis_df.Rda")
-
+load("analysis_df_rawdata.Rda")
 data <- analysis_df[order(analysis_df$id_batch, analysis_df$age),]
 table(data$prod_type)
 data$chicken_type <-  ifelse(data$prod_type == 4, "Processed", 
@@ -16,13 +15,9 @@ data$chicken_type <-  ifelse(data$prod_type == 4, "Processed",
                 ifelse(data$prod_type == 22, "Kyllinggaarden",
                 ifelse(data$prod_type == 29, "Unknown", NA)))))))))
                             
-table(data$chicken_type)
 #####################################
 ###Cleaning data for Grill chicken###
 #####################################
-
-
-
 data$weight[data$weight < 1000 & data$age > 30 & data$chicken_type == "Grill"] <- NA
 data$weight[data$weight < 1000 & data$age > 30 & data$chicken_type == "Processed"] <- NA
 data$weight[data$weight < 750 & data$age > 25 & data$chicken_type == "McDonalds"] <- NA
@@ -220,6 +215,6 @@ library(janitor)
 data <- data %>% 
         clean_names()
 
-save(data,file="data_cleaned.Rda")
+save(data,file="analysis_df_cleaned.Rda")
 
 

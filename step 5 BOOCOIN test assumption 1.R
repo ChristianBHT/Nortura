@@ -11,12 +11,12 @@ library(boot)
 rm(list = ls())
 
 setwd("C:/Users/christian.thorjussen/Project Nortura/")
-source("C:/broiler_acites/ascites_case/step 1 merging dataframe.R")
-source("C:/broiler_acites/ascites_case/step 3 data cleaning.R")
-source("C:/broiler_acites/ascites_case/step 4a modeling growth curves.R")
-source("C:/broiler_acites/ascites_case/step 4c data management.R")
+# source("C:/broiler_acites/ascites_case/step 1 merging dataframe.R")
+# source("C:/broiler_acites/ascites_case/step 3 data cleaning.R")
+# source("C:/broiler_acites/ascites_case/step 4a modeling growth curves.R")
+# source("C:/broiler_acites/ascites_case/step 4c data management.R")
 
-load("wide_data_for_analysis.Rda")
+load("wide_data_for_analysis2.Rda")
 wide_data$feed_name <- str_replace(wide_data$feed_name, "o?=", "aa")
 # Assuming your data frame is named wide_data
 wide_data <- subset(wide_data, hybrid == "Ross 308")
@@ -350,7 +350,7 @@ bayesian_boot <- boot(data=data, statistic = boocoin, weights = dirichlet_w, R=r
 
 
 plot1 <- hist(bayesian_boot$t[,3], breaks = 60,  freq = FALSE, main = " ", xlab = "Difference in R-Squared", col = "lightblue")
-
+plot1
 png("C:/broiler_acites/ascites_case/Results/plot1_test_food_birds_feed.png", width = 800, height = 600)  # Adjust width and height as needed
 plot(plot1, col = "lightblue", main = " ", xlab = "Difference in R-Squared")
 dev.off()

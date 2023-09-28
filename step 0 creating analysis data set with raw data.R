@@ -1,16 +1,16 @@
-
-
-
-
 #This script builds the data frame for Ascites modeling
+
 library(lubridate)
 library(dplyr)
 library(naniar)
+rm(list = ls())
+
 setwd("C:/Users/christian.thorjussen/Project Nortura/")
 load("raw data/Produksjonsdata.Rdata")
 load('Temperature.Rdata')
 load("Humidity.Rdata")
 load("raw data/DaggamleKyllinger.Rdata")
+
 table(DaggamleKyllinger$Hybrid)
 day_data <- data.frame(Produksjonsdata$PK_Produksjonsdata_Fak,
                    Produksjonsdata$FK_Innsett_Dim,
@@ -73,47 +73,30 @@ temperature_data$date <- as.character(temperature_data$date)
 
 #Find duplications and select those with best quality (temperature)
 temp_data_selected <- temperature_data %>%
-  group_by(id_batch, id_farmday) %>% # Group by id_batch and date
+  group_by(id_batch, date) %>% # Group by id_batch and date
   slice_min(qualityCode) # Filter to keep only the best quality
 
-dups <- duplicated(temperature_data[, c("id_batch", "date")]) | 
-        duplicated(temperature_data[, c("id_batch", "date")], fromLast = TRUE)
-non_dups <- !dups
-uniqe_temp_data <- temperature_data[non_dups, ]
-temp_df <- data.frame(rbind(temp_data_selected, uniqe_temp_data))
-temp_df$id_batch <- as.numeric(temp_df$id_batch)
-temp_df$date <- as.Date(temp_df$date)
-temp_df$temperature <- as.numeric(temp_df$temperature)
-temp_df <- subset(temp_df, select = c('id_batch', 'date', 'temperature'))
+uniqe_temp_data <- distinct(temp_data_selected, id_batch, date, .keep_all = TRUE) #Removing duplicated entries  
+temp_df <- subset(uniqe_temp_data, select = c('id_batch', 'date', 'temperature'))
 colnames(temp_df) <-  c('id_batch', 'date', 'out_temp')
 
 #Find duplications and select those with best quality (humiditiy)
 humi_data_selected <- humidity_data %>%
-  group_by(id_batch, id_farmday) %>% # Group by id_batch and date
+  group_by(id_batch, date) %>% # Group by id_batch and date
   slice_min(qualityCode) # Filter to keep only the best quality
 
-dups <- duplicated(humidity_data[, c("id_batch", "date")]) | 
-        duplicated(humidity_data[, c("id_batch", "date")], fromLast = TRUE)
-
-non_dups <- !dups
-uniqe_humi_data <- humidity_data[non_dups, ]
-
-humi_df <- data.frame(rbind(humi_data_selected, uniqe_humi_data))
-humi_df$id_batch <- as.numeric(humi_df$id_batch)
-humi_df$date <- as.Date(humi_df$date)
-humi_df$value <- as.numeric(humi_df$value)
-humi_df <- subset(humi_df, select = c('id_batch', 'date', 'value'))
+uniqe_humi_data <- distinct(humi_data_selected, id_batch, date, .keep_all = TRUE) #Removing duplicated entries  
+humi_df <- subset(uniqe_humi_data, select = c('id_batch', 'date', 'value'))
 colnames(humi_df) <-  c('id_batch', 'date', 'out_humidity')
+
 #I am using merge in such a way that we are only keeping observations with observations in both data set Y and X!
 analysis_df <- merge(day_data, temp_df, by = c('id_batch', 'date'))
 analysis_df <- merge(analysis_df, humi_df, by = c('id_batch', 'date'))
 
-rm(dups, non_dups, 
-   day_data, 
+rm(day_data, 
    temp_df, 
    Produksjonsdata, 
    temperature_data, 
-   uniqe_temp_data, 
    temp_data_selected, 
    humi_data_selected, 
    humi_df,
@@ -139,5 +122,5 @@ colnames(hybrid) <- c("id_batch", "hybrid")
 analysis_df <- merge(analysis_df, hybrid, by = 'id_batch')
 
 
-save(analysis_df,file="analysis_df.Rda")
+save(analysis_df,file="analysis_df_rawdata.Rda")
 

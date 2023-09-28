@@ -34,7 +34,7 @@ pairs_data <- subset(data, select = c('aceties_prev',
                                       'climate_mean_hum',
                                       'average_food'))
                                       
-pairs(pairs_data, pch = 19, col = "black")
+pairs(pairs_data, pch = 19, cex = 0.05, col = "black")
 
 levels = 3  # Set the number of feed types for analysis
 data$feed_group = fct_lump_n(data$feed_name, n = levels, other_level = "other")

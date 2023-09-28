@@ -9,9 +9,10 @@ setwd("C:/Users/christian.thorjussen/Project Nortura/")
 rm(list = ls())
 load('data_nortura_for_analysis.Rda')
 #load('data_nortura_for_analysis_2.Rda')
-
+28683 
 #Extracting the variables we need
 analytic_data <- data
+analytic_data <- distinct(analytic_data, id_batch, id_farmday, .keep_all = TRUE) #Removing duplicated entries by only allowing one combination of age and batch id for each flock 
 #Calculating accumulated dead 
 cumu_dead <- analytic_data %>%
   arrange(id_batch, age) %>%
@@ -60,28 +61,28 @@ analytic_data$food_per_chick <- analytic_data$feed_consump/analytic_data$alive
 
 #Here we want to extract as much information as possible regarding water consumption. 
 #We do this by fitting a qudratic linear regression function for each batch and extract the regression parameters and R2 
-water_stats <- analytic_data %>%
-  group_by(id_batch) %>%
-  filter(!any(is.na(water_per_chick))) %>%
-  do({
-    if (nrow(.) > 4) {
-      model <- lm(water_per_chick ~ age + I(age^2), data = .)
-      estimates <- tidy(model)
-      rsquared <- summary(model)$r.squared
-    } else {
-      estimates <- tibble()
-      rsquared <- NA
-    }
-    tibble(estimates, rsquared)
-  })
-
-
-water_data <-  data.frame(water_stats$id_batch, water_stats$term, water_stats$estimate, water_stats$rsquared)
-colnames(water_data) <- c('id_batch', 'term', 'estimate', 'rsquared')
-water_stats <- pivot_wider(water_data, names_from = term, values_from = estimate)
-colnames(water_stats) <- c('id_batch', 'water_r2', 'water_cons', 'water_slope', 'water_slope2')
-# Merge data
-analytic_data <- left_join(analytic_data, water_stats, by = "id_batch")
+# water_stats <- analytic_data %>%
+#   group_by(id_batch) %>%
+#   filter(!any(is.na(water_per_chick))) %>%
+#   do({
+#     if (nrow(.) > 4) {
+#       model <- lm(water_per_chick ~ age + I(age^2), data = .)
+#       estimates <- tidy(model)
+#       rsquared <- summary(model)$r.squared
+#     } else {
+#       estimates <- tibble()
+#       rsquared <- NA
+#     }
+#     tibble(estimates, rsquared)
+#   })
+# 
+# 
+# water_data <-  data.frame(water_stats$id_batch, water_stats$term, water_stats$estimate, water_stats$rsquared)
+# colnames(water_data) <- c('id_batch', 'term', 'estimate', 'rsquared')
+# water_stats <- pivot_wider(water_data, names_from = term, values_from = estimate)
+# colnames(water_stats) <- c('id_batch', 'water_r2', 'water_cons', 'water_slope', 'water_slope2')
+# # Merge data
+# analytic_data <- left_join(analytic_data, water_stats, by = "id_batch")
 # 
 # i = sample(analytic_data$id_batch, 1)
 # obs_df <- filter(analytic_data, id_batch == i)
@@ -94,27 +95,27 @@ analytic_data <- left_join(analytic_data, water_stats, by = "id_batch")
 #   xlab("Age") +
 #   ylab("birds_p_m_sqr")
 
-
-birds_meter <- analytic_data %>%
-  group_by(id_batch) %>%
-  filter(!any(is.na(birds_p_m_sqr))) %>%
-  do({
-    if (nrow(.) > 4) {
-      model <- lm(birds_p_m_sqr ~ age + I(age^2), data = .)
-      estimates <- tidy(model)
-      rsquared <- summary(model)$r.squared
-    } else {
-      estimates <- tibble()
-      rsquared <- NA
-    }
-    tibble(estimates, rsquared)
-  }) 
-bird_data <- data.frame(birds_meter$id_batch, birds_meter$term, birds_meter$estimate, birds_meter$rsquared)
-colnames(bird_data) <- c('id_batch', 'term', 'estimate', 'rsquared')
-bird_data <- pivot_wider(bird_data, names_from = term, values_from = estimate)
-colnames(bird_data) <- c('id_batch', 'bird_r2', 'bird_cons', 'bird_slope', 'bird_slope2')
- 
-analytic_data <- left_join(analytic_data, bird_data, by = "id_batch")
+# 
+# birds_meter <- analytic_data %>%
+#   group_by(id_batch) %>%
+#   filter(!any(is.na(birds_p_m_sqr))) %>%
+#   do({
+#     if (nrow(.) > 4) {
+#       model <- lm(birds_p_m_sqr ~ age + I(age^2), data = .)
+#       estimates <- tidy(model)
+#       rsquared <- summary(model)$r.squared
+#     } else {
+#       estimates <- tibble()
+#       rsquared <- NA
+#     }
+#     tibble(estimates, rsquared)
+#   }) 
+# bird_data <- data.frame(birds_meter$id_batch, birds_meter$term, birds_meter$estimate, birds_meter$rsquared)
+# colnames(bird_data) <- c('id_batch', 'term', 'estimate', 'rsquared')
+# bird_data <- pivot_wider(bird_data, names_from = term, values_from = estimate)
+# colnames(bird_data) <- c('id_batch', 'bird_r2', 'bird_cons', 'bird_slope', 'bird_slope2')
+#  
+# analytic_data <- left_join(analytic_data, bird_data, by = "id_batch")
 
 #This chunck of code extracts outdoor climate stats; mean, standard deviation, min and max
 climate_stats <- data %>%
@@ -153,30 +154,30 @@ analytic_data <- left_join(analytic_data, indoor_stats, by = 'id_batch')
 
 
 # We do the same for food consumption as for water it has more missing values than water
-
-food_stats <- analytic_data %>%
-  group_by(id_batch) %>%
-  filter(!any(is.na(food_per_chick))) %>%
-  do({
-    if (nrow(.) > 8) {
-      model <- lm(food_per_chick ~ age + I(age^2), data = .)
-      estimates <- tidy(model)
-      rsquared <- summary(model)$r.squared
-    } else {
-      estimates <- tibble()
-      rsquared <- NA
-    }
-    tibble(estimates, rsquared)
-  }) 
-
-food_data <- data.frame(food_stats$id_batch, food_stats$term, food_stats$estimate, food_stats$rsquared)
-colnames(food_data) <- c('id_batch', 'term', 'estimate', 'rsquared')
-food_data <- pivot_wider(food_data, names_from = term, values_from = estimate)
-colnames(food_data) <- c('id_batch', 'food_r2', 'food_cons', 'food_slope', 'food_slope2')
-
-colnames(food_data) <- c('id_batch', 'R2_food', 'food_inter', 'food_age2', 'food_age')
-
-analytic_data <- left_join(analytic_data, food_data, by = 'id_batch')
+# 
+# food_stats <- analytic_data %>%
+#   group_by(id_batch) %>%
+#   filter(!any(is.na(food_per_chick))) %>%
+#   do({
+#     if (nrow(.) > 8) {
+#       model <- lm(food_per_chick ~ age + I(age^2), data = .)
+#       estimates <- tidy(model)
+#       rsquared <- summary(model)$r.squared
+#     } else {
+#       estimates <- tibble()
+#       rsquared <- NA
+#     }
+#     tibble(estimates, rsquared)
+#   }) 
+# 
+# food_data <- data.frame(food_stats$id_batch, food_stats$term, food_stats$estimate, food_stats$rsquared)
+# colnames(food_data) <- c('id_batch', 'term', 'estimate', 'rsquared')
+# food_data <- pivot_wider(food_data, names_from = term, values_from = estimate)
+# colnames(food_data) <- c('id_batch', 'food_r2', 'food_cons', 'food_slope', 'food_slope2')
+# 
+# colnames(food_data) <- c('id_batch', 'R2_food', 'food_inter', 'food_age2', 'food_age')
+# 
+# analytic_data <- left_join(analytic_data, food_data, by = 'id_batch')
 
 #Making a month variable
 analytic_data$month <- month(analytic_data$date)
@@ -225,14 +226,17 @@ start_weight <- analytic_data %>%
   group_by(id_batch) %>%
   summarise(start_weight = min(weight))
 
+analytic_data <- left_join(analytic_data, start_weight, by = 'id_batch')
 
 start_weight$start_weight[start_weight$start_weight <= 20] <- NA #Removing inplausible values of low weight
+analytic_data$average_food[analytic_data$average_food > 1] <- NA
+analytic_data$average_food[analytic_data$average_food == 0] <- NA
 
 
-analytic_data <- left_join(analytic_data, start_weight, by = 'id_batch')
 # Keeping the variables we need 
 
 long_data <- subset(analytic_data, select = c('id_batch',
+                                'age',              
                                 'feed_name', #Treatment
                                 'aceties', #Outcome
                                 'prod_type', #Chicken type
@@ -253,13 +257,13 @@ long_data <- subset(analytic_data, select = c('id_batch',
                                 'slaughter_age',
                                 'leverandoer_nr',
                                 'hybrid'))  
+save(long_data,file="long_data_for_analysis.Rda")
+
 
 # Reshape from long to wide 
 wide_data <-  distinct(long_data, id_batch, .keep_all = TRUE)
 
 save(wide_data,file="wide_data_for_analysis.Rda")
-
-load(file="wide_data_for_analysis.Rda")
 
 
 

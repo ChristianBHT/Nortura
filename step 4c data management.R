@@ -5,8 +5,9 @@ library(tidyverse)
 library(broom)
 library(lubridate)
 library(dagitty)
-setwd("C:/Users/christian.thorjussen/Project Nortura/")
 rm(list = ls())
+setwd("C:/Users/christian.thorjussen/Project Nortura/")
+
 load('analysis_df.Rda')
 names(data)[names(data) == "area_x"] <- "area"
 names(data)[names(data) == "aceties_x"] <- "ascites"
@@ -276,7 +277,7 @@ save(long_data,file="long_data_for_analysis.Rda")
 # Reshape from long to wide 
 wide_data <-  distinct(long_data, id_batch, .keep_all = TRUE)
 
-save(wide_data,file="wide_data_for_analysis.Rda")
+save(wide_data,file="wide_data_for_analysis2.Rda")
 
 
 

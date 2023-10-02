@@ -179,7 +179,7 @@ dirichlet <- matrix( rexp(N * R, 1) , ncol = N, byrow = TRUE) #Creating a matrix
 dirichlet_w <- dirichlet / rowSums(dirichlet)
 
 bayesian_boot <- boot(data=data, statistic = boocoin_test_3, weights = dirichlet_w, R=rep(1,R), p=0.85) #Bootstrapping 
-hist(bayesian_boot$t[,3])
+
 hist(bayesian_boot$t[,3], breaks = 60,  freq = FALSE, main = " ", xlab = "Difference in R-Squared", col = "lightblue")
 
 plot3 <- hist(bayesian_boot$t[,3], breaks = 60,  freq = FALSE, main = " ", xlab = "Difference in R-Squared", col = "lightblue")

@@ -1,79 +1,63 @@
+library(dplyr)
+library(xgboost)
 # Some basic data managment for testing 
+load("wide_data_for_analysis.Rda")
+data <- wide_data
+data$feed_name <- str_replace(data$feed_name, "�", "aa")
+data$feed_name <- str_replace(data$feed_name, "�", "o")
+data$feed_name <- str_replace(data$feed_name, "o?=", "aa")
+data <- subset(data, hybrid == "Ross 308")
+levels = 4  # Set the number of levels other than other
+data$feed_group = fct_lump_n(data$feed_name, n = levels, other_level = "other")
+data$treatment <-  ifelse(data$feed_group == "Kromat Kylling 2 Enkel u/k", 1, 0)
+data$treatment <- as.factor(data$treatment)
+data$frequent_month <- as.factor(data$frequent_month)
+data$ascites_prev <- 1000*data$ascites/data$n_of_chicken
 data$prod_type <- as.factor(data$prod_type)
 data$feed_name <- as.factor(data$feed_name)
 
+formula <- ascites_prev ~ treatment + frequent_month + prod_type
+  
 
-
-S_learner <- function(data, index, formula){ 
+S_learner <- function(data, index, formula, nrounds=100, eta = 0.1, max_depth = 3){ 
   
   resample <- data[index, ]
-  resample <- data
-  formula <- ascites_prev <-   
-  # Define the training control settings
-  ctrl <- trainControl(method = "cv",   # Cross-validation
-                       number = 10,    # Number of folds
-                       verboseIter = TRUE)
   
-  # Train the random forest model
-  model <- train(
-    formula,
-    data = resample,
-    method = "rf",        # Random Forest
-    trControl = ctrl
+  # resample <- data #uncomment for testing
+
+  label <- subset(resample, select = c( as.character(update(formula, . ~ .)[[2]])))
+  features <- subset(resample, select = c(setdiff(all.vars(formula), as.character(formula[[2]]))))
+  
+  #look for features factor variables 
+  factor_variables <- names(features)[sapply(features, is.factor)]
+  #Create dummy variables from factor variables
+  dummy_matrix <- model.matrix(~ . - 1, data = data[, factor_variables])
+  features <- cbind(features, dummy_matrix)
+  features <- features %>%
+    select(-any_of(factor_variables))
+  data_matrix <- xgb.DMatrix(data = as.matrix(features), label = as.matrix(label))
+
+  params <- list(
+    objective = "reg:squarederror", 
+    eta = eta,                      
+    max_depth = max_depth
   )
   
-  train_r2 <-  cor(subset(df_total, select=get(Y))[,1], predict(model, dtrain))^2
+  model <- xgboost(data = data_matrix, params = params, nrounds = nrounds)
   
-  # Access the cross-validation results
-  full_y <- with(resample, get(Y))
+  r2 <-  cor(subset(resample, select=ascites_prev)[,1], predict(model, as.matrix(features)))^2
   
-  resample$treatment = 1
-  u_1 <- predict(model, dtrain) 
+  features$treatment = 1
+  u_1 <- predict(model, as.matrix(features)) 
   
-  resample$treatment = 0
-  u_0 <- predict(model, dtrain) 
+  features$treatment = 0
+  u_0 <- predict(model, as.matrix(features)) 
   
   ATE <- mean(u_1 - u_0) # Mean of individual treatment effects
   
-  return(c(ATE, u_0, u_1, train_r2))
+  return(c(ATE, r2))
 }
 
 
-df_total <- subset(data, select = c('feed_group', 
-                                    'ascites_prev', 
-                                    'prod_type', 
-                                    'frequent_month')) 
 
-#Create dummy variables for produ variable
-
-dummy_vars <- model.matrix(~ 0 + factor(df_total$prod_type))
-df_total <- cbind(df_total, dummy_vars)
-dummy_vars <- model.matrix(~ 0 + factor(df_total$frequent_month))
-df_total <- cbind(df_total, dummy_vars)
-
-df_total$treatment <- ifelse(df_total$feed_group == "Kromat Kylling 2 Enkel u/k", 1, 0)
-colnames(df_total) <- c('feed', 'ascites', 'type', 'month', 
-                        'prodT1', 'prodT2', 'prodT3', 'prodT4', 
-                        'month1','month2','month3','month4','month5','month6','month7','month8','month9','month10','month11','month12',
-                        'treatment')
-
-label <- df_total$ascites
-adjust_set <- as.matrix(df_total[, !(names(df_total) %in% c("ascites", 'type', 'month', 'prodtT1', 'month1', 'feed'))])
-
-N <- nrow(df_total)
-
-
-R = 50 #Number of bootstrap replica
-
-dirichlet <- matrix( rexp(N * R, 1) , ncol = N, byrow = TRUE) #Creating a matrix of dirichlet weights 
-dirichlet_w <- dirichlet / rowSums(dirichlet)
-
-S_total_effect <- boot(data=df_total, 
-                      statistic = S_learner, 
-                      Y = 'ascites', 
-                      adjust_set = c('prodT1', 'prodT2', 'prodT3', 'prodT4', 
-                                     'month1','month2','month3','month4','month5','month6','month7','month8','month9','month10','month11','month12',
-                                     'treatment') , 
-                      weights = dirichlet_w, 
-                      R=rep(1,R)) 
 

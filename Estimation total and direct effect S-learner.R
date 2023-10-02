@@ -5,6 +5,8 @@ library(dagitty)
 library(caret)
 library(ipred)
 library(boot)
+library(xgboost)
+
 setwd("C:/Users/christian.thorjussen/Project Nortura/")
 rm(list = ls())
 
@@ -15,42 +17,80 @@ wide_data$feed_name <- str_replace(wide_data$feed_name, "o?=", "aa")
 wide_data <- subset(wide_data, hybrid == "Ross 308")
 data <- wide_data
 
+data$feed_name <- as.factor(data$feed_name)
+data$prod_type <- as.factor(data$prod_type)
+data$id_slaughterhouse <- as.factor(data$id_slaughterhouse)
+data$leverandoer_nr <- data$leverandoer_nr
 data$ascites_prev <- 1000*data$ascites/data$n_of_chicken
+data$frequent_month <- as.factor(data$frequent_month)
 
-formula <- ascites + 
-  # Create a trainControl object for cross-validation
-  ctrl <- trainControl(
-    method = "cv",           # Cross-validation method (e.g., "cv" for k-fold)
-    number = 5,              # Number of folds for cross-validation
-    verboseIter = TRUE       # Print progress during tuning
-  )
+formula <- ascites_prev ~ prod_type + frequent_month + id_slaughterhouse
 
-# Define the parameter grid to search over
-param_grid <- expand.grid(
-  mtry = c(2, 3),          # Number of variables randomly sampled at each split
-  ntree = c(100, 200)      # Number of trees in the forest
+label <- subset(data, select = c(as.character(update(formula, . ~ .)[[2]])))
+
+independent_vars <- all.vars(formula)[-1]
+features <- data %>% select(independent_vars)
+
+#look for features factor variables 
+factor_variables <- names(features)[sapply(features, is.factor)]
+
+#Create dummy variables from factor variables
+dummy_matrix <- model.matrix(~ . - 1, data = data[, factor_variables])
+features <- cbind(features, dummy_matrix)
+features <- features %>%
+  select(-any_of(factor_variables))
+data_matrix <- xgb.DMatrix(data = as.matrix(features), label = as.matrix(label))
+
+params <- list(
+  objective = "reg:squarederror", 
+  eta = 0.1,                      
+  max_depth = 3
 )
 
-# Train and tune the random forest model using cross-validation
-set.seed(123)  # Set a random seed for reproducibility
-rf_model <- train(
-  x = df[, predictor_vars],  # Predictor variables
-  y = df[, outcome_var],     # Outcome variable
-  method = "rf",            # Specify the method ("rf" for random forest)
-  trControl = ctrl,         # Use the trainControl object
-  tuneGrid = param_grid     # Specify the parameter grid
+# Perform k-fold cross-validation
+cv_result <- xgb.cv(
+  params = params,
+  data = xgb.DMatrix(data = as.matrix(features), label = as.matrix(label)),
+  nfold = 10,                     # Number of folds
+  verbose = TRUE,
+  nrounds = 300
+  
 )
+cv <- data.frame(Boosting_Round =  cv_result$evaluation_log$iter, 
+                 Train_Error = cv_result$evaluation_log$train_rmse_mean, 
+                 Test_Error = cv_result$evaluation_log$test_rmse_mean)
+
+train_error <- cv_result$evaluation_log$train_rmse_mean
+test_error <- cv_result$evaluation_log$test_rmse_mean
 
 
-N <- nrow(data)
+ggplot(cv, aes(x = Boosting_Round)) +
+  geom_line(aes(y = Train_Error, color = "Train Error"), size = 1) +
+  geom_line(aes(y = Test_Error, color = "Test Error"), size = 1) +
+  scale_color_manual(values = c("Train Error" = "blue", "Test Error" = "red")) +
+  labs(x = "Boosting Round", y = "Error Rate") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(0, max(cv$Boosting_Round), by = 10))  #
 
-R = 50 #Number of bootstrap replica
 
-dirichlet <- matrix( rexp(N * R, 1) , ncol = N, byrow = TRUE) #Creating a matrix of dirichlet weights 
+# Estimating 
+N <- nrow(data) # Bootstrap obs per resampling
+R = 1000 #Number of bootstrap replica
+
+# Creating a matrix of dirichlet weights for Bayesian bootstrap
+
+dirichlet <- matrix( rexp(N * R, 1) , ncol = N, byrow = TRUE) 
 dirichlet_w <- dirichlet / rowSums(dirichlet)
 
-S_total_effect <- boot(data=data, 
+formula <- ascites_prev ~ treatment + prod_type + frequent_month + id_slaughterhouse
+S_learner_total <- boot(data=data, 
                        statistic = S_learner, 
-                       formula = ascites_prev ~  frequent_month + treatment, 
+                       formula = formula, 
                        weights = dirichlet_w, 
-                       R=rep(1,R)) 
+                       R=rep(1,R),
+                       eta = 0.1,                      
+                       max_depth = 3,
+                       nrounds = 25)
+
+S_total_boot_result <- S_learner_total$t
+

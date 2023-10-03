@@ -19,7 +19,7 @@ data$id_slaughterhouse <- as.factor(data$id_slaughterhouse)
 
 formula <- ascites_prev ~ treatment + prod_type + frequent_month + id_slaughterhouse
 
-# The S-learner function takes a formula (like Y ~ X + Z) and data as user inputs. 
+# The S-learner function takes a formula (like Y ~ X + Z) and data as user inputs (pluss hyperparameters). 
 # Then uses the XGBoost algorithm to estimate R^2 and ATE
 S_learner <- function(data, index, formula, nrounds=100, eta = 0.1, max_depth = 3){ 
   
@@ -51,18 +51,23 @@ S_learner <- function(data, index, formula, nrounds=100, eta = 0.1, max_depth = 
     max_depth = max_depth
   )
   
+  # Estimation of function
   model <- xgboost(data = data_matrix, params = params, nrounds = nrounds, verbose=0)
   
+  # Calculate R^2
   r2 <-  cor(subset(resample, select=ascites_prev)[,1], predict(model, as.matrix(features)))^2
   
+  # Calculate contrafactual outcomes
   features$treatment = 1
   u_1 <- predict(model, as.matrix(features))
   
   features$treatment = 0
   u_0 <- predict(model, as.matrix(features)) 
   
+  # Calculate mean difference
   ATE <- mean(u_1 - u_0) # Mean of individual treatment effects
   
+  # Return results
   return(c(ATE, r2))
 }
 

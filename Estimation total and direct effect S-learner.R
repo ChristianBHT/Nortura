@@ -93,4 +93,5 @@ S_learner_total <- boot(data=data,
                        nrounds = 25)
 
 S_total_boot_result <- S_learner_total$t
-
+save(S_total_boot_result,file="C:/broiler_acites/ascites_case/Results/S_total_boot_result.Rda")
+hist(S_learner_total$t[,1])

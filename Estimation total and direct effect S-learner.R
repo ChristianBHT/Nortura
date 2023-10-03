@@ -188,9 +188,11 @@ plot_total <- ggplot(data = df, aes(x = feed, y = values)) +
   ylab("Treatment effect on the prevalence (1/1000) ascites") +
   ggtitle("S-learner ATE Total")
 
-png("C:/broiler_acites/ascites_case/Results/plot_total.png", width = 800, height = 600)  # Adjust width and height as needed
+png("C:/broiler_acites/ascites_case/Results/plot_total_Sl.png", width = 800, height = 600)  # Adjust width and height as needed
 plot(plot_total, col = "lightblue", main = " ", xlab = "Difference in R-Squared", freq = F)
 dev.off()
+plot_total
+
 #-----------------------------------------------------------------------------
 # Direct effect where W union X is Birds p m-sqr, Chicken type, Food consumption, Growth, Growth$^s$, Indoor Temperature, Month, Outdoor temperature, Slaughterhouse, Water consumption, start weight
 #-----------------------------------------------------------------------------
@@ -316,12 +318,15 @@ treat_d3$feed <- "Feed 3"
 colnames(treat_d3) <- c('values', 'feed')
 df <- rbind(treat_d1, treat_d2, treat_d3)
 
-ggplot(data = df, aes(x = feed, y = values)) +
+plot_total <- ggplot(data = df, aes(x = feed, y = values)) +
   geom_boxplot() +
   xlab("Growth Feed Type") +
   ylab("Treatment effect on the prevalence (1/1000) ascites") +
-  ggtitle("S-learner ATE Direct") 
+  ggtitle("S-learner ATE Total")
 
+png("C:/broiler_acites/ascites_case/Results/plot_direct_Sl.png", width = 800, height = 600)  # Adjust width and height as needed
+plot(plot_total, col = "lightblue", main = " ", xlab = "Difference in R-Squared", freq = F)
+dev.off()
 
 #-------------------------------------------------------------------------------------------------
 # Direct effect (attempting CATE) where W union X is Birds p m sqr, Chicken type, Food consumption, Growth_linear, Growth sqr, Indoor Temperature, Indoor humidity, Kg per m sqr, Month, Outdoor humidity, Outdoor temperature, Slaughter age, Slaughterhouse, Water consumption, start weight
@@ -451,10 +456,15 @@ treat_cate3$feed <- "Feed 3"
 colnames(treat_cate3) <- c('values', 'feed')
 df <- rbind(treat_cate1, treat_cate2, treat_cate3)
 
-ggplot(data = df, aes(x = feed, y = values)) +
+plot_total <- ggplot(data = df, aes(x = feed, y = values)) +
   geom_boxplot() +
   xlab("Growth Feed Type") +
   ylab("Treatment effect on the prevalence (1/1000) ascites") +
-  ggtitle("S-learner ATE Direct") 
+  ggtitle("S-learner ATE Total")
+plot_total
+png("C:/broiler_acites/ascites_case/Results/plot_cate_Sl.png", width = 800, height = 600)  # Adjust width and height as needed
+plot(plot_total, col = "lightblue", main = " ", xlab = "Difference in R-Squared", freq = F)
+dev.off()
+
 
 

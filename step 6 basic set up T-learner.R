@@ -19,7 +19,7 @@ data$ascites_prev <- 1000*data$ascites/data$n_of_chicken
 data$frequent_month <- as.factor(data$frequent_month)
 levels = 4  # Set the number of levels other than other
 data$feed_group = fct_lump_n(data$feed_name, n = levels, other_level = "other")
-data$treatment <-  ifelse(data$feed_group == "Kromat Kylling 2 Enkel u/k", 1, 0)
+data$treatment <-  ifelse(data$feed_group == "Kromat Kylling 2 Leg u/k ", 1, 0)
 
 
 formula <- ascites_prev ~  prod_type + frequent_month + id_slaughterhouse

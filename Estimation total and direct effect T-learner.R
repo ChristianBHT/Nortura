@@ -32,7 +32,7 @@ data$frequent_month <- as.factor(data$frequent_month)
 levels = 4  # Set the number of levels other than other
 data$feed_group = fct_lump_n(data$feed_name, n = levels, other_level = "other")
 # table(data$feed_group)
-data$treatment <-  ifelse(data$feed_group == "Toppkylling Netto", 1, 0)
+data$treatment <-  ifelse(data$feed_group == "Kromat Kylling 2 Enkel u/k", 1, 0)
 table(data$feed_group)
 #--------------------------------------------------------------------------------
 # The first part of the script is to tune the base models and get hyperparameters
@@ -73,10 +73,10 @@ params <- list(
 # Perform k-fold cross-validation
 cv_result <- xgb.cv(
   params = params,
-  data = xgb.DMatrix(data = as.matrix(features_t), label = as.matrix(label_t)),
+  data = xgb.DMatrix(data = as.matrix(features_c), label = as.matrix(label_c)),
   nfold = 10,                     # Number of folds
   verbose = TRUE,
-  nrounds = 14
+  nrounds = 140
   
 )
 
@@ -98,6 +98,8 @@ ggplot(cv, aes(x = Boosting_Round)) +
 #------------------------------------------------------------------
 # Estimating total effect treatment = "Kromat Kylling 2 Enkel u/k"
 #------------------------------------------------------------------
+data$treatment <-  ifelse(data$feed_group == "Kromat Kylling 2 Enkel u/k", 1, 0)
+
 N <- nrow(data) # Bootstrap obs per resampling
 R = 1000 #Number of bootstrap replica
 
@@ -152,7 +154,7 @@ save(T_total_boot_feed2,file="C:/broiler_acites/ascites_case/Results/T_total_boo
 #------------------------------------------------------------------
 # Estimating total effect treatment = "Kromat Kylling 2 Leg u/k "
 #------------------------------------------------------------------
-data$treatment <-  ifelse(data$feed_group == "Kromat Kylling 2 Leg u/k ", 1, 0)
+data$treatment <-  ifelse(data$feed_group == "Kromat Kylling 2 Leg u/k", 1, 0)
 N <- nrow(data) # Bootstrap obs per resampling
 R = 1000 #Number of bootstrap replica
 
@@ -173,7 +175,31 @@ T_learner_total <- boot(data=data,
                         eta_c = 0.1,                      
                         max_depth_c = 4,
                         nrounds_c = 20)
-T_total_boot_feed2 <- T_learner_total$t
-save(T_total_boot_feed2,file="C:/broiler_acites/ascites_case/Results/T_total_boot_feed2.Rda")
+T_total_boot_feed3 <- T_learner_total$t
+save(T_total_boot_feed3,file="C:/broiler_acites/ascites_case/Results/T_total_boot_feed3.Rda")
+# Creating bocplots of the distributions
+treat1 <- data.frame(T_total_boot_feed1[,1])
+treat2 <- data.frame(T_total_boot_feed2[,1])
+treat3 <- data.frame(T_total_boot_feed3[,1])
+treat1$feed <- "Feed 1"
+colnames(treat1) <- c('values', 'feed')
+treat2$feed <- "Feed 2"
+colnames(treat2) <- c('values', 'feed')
+treat3$feed <- "Feed 3"
+colnames(treat3) <- c('values', 'feed')
+df <- rbind(treat1, treat2, treat3)
 
+plot_total <- ggplot(data = df, aes(x = feed, y = values)) +
+  geom_boxplot() +
+  xlab("Growth Feed Type") +
+  ylab("Treatment effect on the prevalence (1/1000) ascites") +
+  ggtitle("T-learner ATE Total effect")
+
+png("C:/broiler_acites/ascites_case/Results/plot_total_Tl.png", width = 800, height = 600)  # Adjust width and height as needed
+plot(plot_total, col = "lightblue", main = " ", xlab = "Difference in R-Squared", freq = F)
+dev.off()
+plot_total
+#-------------------------------------------------------------------------------------------
+# Estimating direct effect treatment = "Kromat Kylling 2 Enkel u/k"
+#-------------------------------------------------------------------------------------------
 

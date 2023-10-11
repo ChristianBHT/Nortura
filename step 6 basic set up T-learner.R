@@ -31,13 +31,13 @@ T_learner <- function(data, index, formula, nrounds_t=30, nrounds_c=30, eta_t = 
   data_t <- subset(resample, treatment == 1)
   data_c <- subset(resample, treatment == 0) 
   independent_vars <- all.vars(formula)[-1]
-  
+  data %>% select(all_of(independent_vars))
   label_t <- subset(data_t, select = c( as.character(update(formula, . ~ .)[[2]])))
   label_c <- subset(data_c, select = c( as.character(update(formula, . ~ .)[[2]])))
 
-  features_t <- data_t %>% select(independent_vars)
-  features_c <- data_c %>% select(independent_vars)
-  full_data <- resample %>% select(independent_vars)
+  features_t <- data_t %>% select(all_of(independent_vars))
+  features_c <- data_c %>% select(all_of(independent_vars))
+  full_data <- resample %>% select(all_of(independent_vars))
   #look for features factor variables 
   factor_variables <- names(features_t)[sapply(features_t, is.factor)]
   #Create dummy variables from factor variables

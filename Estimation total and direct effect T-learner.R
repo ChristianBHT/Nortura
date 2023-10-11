@@ -21,7 +21,8 @@ data$feed_name <- as.factor(data$feed_name)
 data$prod_type <- as.factor(data$prod_type)
 data$id_slaughterhouse <- as.factor(data$id_slaughterhouse)
 data$leverandoer_nr <- data$leverandoer_nr
-data$ascites_prev <- 1000*data$ascites/data$n_of_chicken
+data$ascites_prev <- data$ascites/data$n_of_chicken
+
 data$frequent_month <- as.factor(data$frequent_month)
 
 #-----------------------------------------------------------------------------

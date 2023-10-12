@@ -1,8 +1,9 @@
 library(tidyverse)
 library(expss)
 rm(list = ls())
-setwd("C:/Users/christian.thorjussen/Project Nortura/")
-load("analysis_df_rawdata.Rda")
+setwd("C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk")
+
+load("analysis_df_newdata.Rda")
 data <- analysis_df[order(analysis_df$id_batch, analysis_df$age),]
 table(data$prod_type)
 data$chicken_type <-  ifelse(data$prod_type == 4, "Processed", 
@@ -142,65 +143,6 @@ for (i in 0:34){
 #Data cleaning line by line
 data <- rbind(grill_data, proces_data, land_data, organic_data, liveche_data, mcdonald_data, hubbard_data, kyllinggaarden_data)
 
-data$light_hours[data$light_hours == 2400] <- 24
-data$light_hours[data$light_hours == 2224] <- 24
-
-data$light_hours[data$light_hours == 1818] <- 18
-data$light_hours[data$light_hours == 1800] <- 18
-
-data$light_hours[data$light_hours == 1600] <- 16
-data$light_hours[data$light_hours == 65] <- 16
-
-data$light_hours[data$light_hours == 76] <- 16
-data$light_hours[data$light_hours == 80] <- 24
-
-data$light_hours[data$light_hours == 81] <- 18
-data$light_hours[data$light_hours == 98] <- 24
-
-data$light_hours[data$light_hours == 100 & data$id_batch == 34245] <- 24
-data$light_hours[data$light_hours == 100] <- 16
-
-data$light_hours[data$light_hours == 116] <- 16
-data$light_hours[data$light_hours == 156] <- 16
-
-data$light_hours[data$light_hours == 158] <- 18
-data$light_hours[data$light_hours == 161] <- 16
-
-data$light_hours[data$light_hours == 166] <- 16
-data$light_hours[data$light_hours == 171] <- 17
-
-data$light_hours[data$light_hours == 180] <- 18
-data$light_hours[data$light_hours == 181] <- 18
-
-data$light_hours[data$light_hours == 187] <- 18
-data$light_hours[data$light_hours == 188] <- 18
-
-data$light_hours[data$light_hours == 216] <- 16
-data$light_hours[data$light_hours == 240] <- 24
-
-data$light_hours[data$light_hours == 244] <- 24
-data$light_hours[data$light_hours == 60] <- 16
-
-data$light_hours[data$light_hours == 25] <- 24
-data$light_hours[data$light_hours == 28] <- 18
-
-data$light_hours[data$light_hours == 40 & data$id_batch == 77492] <- 18
-data$light_hours[data$light_hours == 40 & data$id_batch == 82348] <- 16
-
-data$light_hours[data$light_hours == 47] <- 16
-data$light_hours[data$light_hours == 50 & data$id_batch == 28025] <- 18
-
-data$light_hours[data$id_batch == 83030 & data$age > 6 & data$age < 34] <- 18
-data$light_hours[data$id_batch == 83030 & data$age == 34] <- 24
-
-data$dark_periods[data$id_batch == 83030 & data$age > 6 & data$age < 34] <- 1
-data$dark_hours[data$id_batch == 83030] <- 24
-
-data$light_hours[data$light_hours == 57] <- 16
-data$light_hours[data$light_hours == 63 & data$age < 33] <- 16
-
-data$light_hours[data$light_hours == 63] <- 24
-data$light_hours[data$light_hours > 24] <- NA
 
 data$temp_max[data$temp_max == -99.0] <- NA
 data$temp_min[data$temp_min >= 80] <- NA
@@ -215,6 +157,6 @@ library(janitor)
 data <- data %>% 
         clean_names()
 
-save(data,file="analysis_df_cleaned.Rda")
+save(data,file="analysis_df_new_cleaned.Rda")
 
 

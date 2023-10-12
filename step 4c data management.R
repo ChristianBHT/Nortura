@@ -6,7 +6,7 @@ library(broom)
 library(lubridate)
 library(dagitty)
 rm(list = ls())
-# Kristian er inne og føkker
+
 setwd("C:/Users/christian.thorjussen/Project Nortura/")
 
 load('analysis_df.Rda')

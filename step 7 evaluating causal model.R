@@ -78,9 +78,13 @@ T_direct_boot_fake <- T_learner_direct$t
 hist(T_direct_boot_fake[,1])
 save(T_direct_boot_fake,file="C:/broiler_acites/ascites_case/Results/T_direct_boot_fake.Rda")
 
+# Using a dummy outcome
+shape <- 1    # Shape parameter (α)
+rate <- 0.5   # Rate parameter (β)
 
-# Adding a random variable
-data$random <- rnorm(nrow(data),mean = 0, sd = 1)
+# Generate a gamma random variable
+data$acites_random <- rgamma(n = nrow(data), shape = shape, rate = rate)
+
 # Treatment feed 1
 levels = 4  # Set the number of levels other than other
 data$feed_group = fct_lump_n(data$feed_name, n = levels, other_level = "other")
@@ -88,10 +92,9 @@ table(data$feed_group)
 data$treatment_1 <-  ifelse(data$feed_group == "Kromat Kylling 2 Enkel u/k", 1, 0)
 data$treatment_2 <-  ifelse(data$feed_group == "Toppkylling Netto", 1, 0)
 data$treatment_3 <-  ifelse(data$feed_group == "Kromat Kylling 2 Leg u/k", 1, 0)
-data$treatment  <- ifelse(data$treatment_1 == 1 | data$treatment_2 == 1 | data$treatment_3 == 1 , 1, 0)
 data$treatment <- ifelse(data$treatment_2 == 1 | data$treatment_3 == 1, NA, ifelse(data$treatment_1 == 1, 1,0))
 
-formula_t <- ascites_prev ~  prod_type + frequent_month + id_slaughterhouse + random
+formula_t <- acites_random ~  prod_type + frequent_month + id_slaughterhouse + random
 
 N <- nrow(data) # Bootstrap obs per resampling
 R = 1000 #Number of bootstrap replica
@@ -106,32 +109,15 @@ T_learner_total <- boot(data=data,
                         formula = formula_t, 
                         weights = dirichlet_w, 
                         R=rep(1,R),
-                        eta_t = 0.01,                      
-                        max_depth_t = 3,
-                        nrounds_t = 50,
+                        eta_t = 0.1,                      
+                        max_depth_t = 4,
+                        nrounds_t = 10,
                         eta_c = 0.1,                      
                         max_depth_c = 4,
                         nrounds_c = 10)
-T_total_boot_random <- T_learner_total$t
-hist(T_total_boot_random[,1])
-save(T_total_boot_random,file="C:/broiler_acites/ascites_case/Results/T_total_boot_fake.Rda")
-
-hist(data$ascites_prev)
-shape <- 2    # Shape parameter (α)
-rate <- 1.5   # Rate parameter (β)
-
-# Generate a gamma random variable
-gamma_var <- rgamma(n = 1000, shape = shape, rate = rate)
-hist(gamma_var)
-
-library(MASS)
-initial_params <- list(shape = 10, rate = 5)
-# Fit a gamma distribution to your data
-fit <- fitdistr(data$ascites_prev, densfun = "gamma", start = initial_params)
-
-# Print the estimated parameters
-cat("Estimated shape (alpha):", fit$estimate[1], "\n")
-cat("Estimated rate (beta):", fit$estimate[2], "\n")
+T_total_boot_out_random <- T_learner_total$t
+hist(T_total_boot_out_random[,1])
+save(T_total_boot_out_random,file="C:/broiler_acites/ascites_case/Results/T_total_boot_out_random.Rda")
 
 
 

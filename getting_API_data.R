@@ -120,7 +120,7 @@ head(data)
 # the loop takes some time.
 
 #Shaving off a few dates 
-data <- subset(data, as.Date(prod_date) <= as.Date("2022-12-01"))
+data <- subset(data, as.Date(prod_date) <= as.Date("2023-12-01"))
 
 #The procedure is pretty much the same as above
 # Insert your own client ID here

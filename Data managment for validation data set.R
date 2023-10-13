@@ -10,7 +10,7 @@ load("Produksjonsdata.Rdata")
 load('Temperature.Rdata')
 load("Humidity.Rdata")
 load("DaggamleKyllinger.Rdata")
-table(DaggamleKyllinger$Hybrid)
+
 day_data <- data.frame(Produksjonsdata$PK_Produksjonsdata_Fak,
                        Produksjonsdata$FK_Innsett_Dim,
                        Produksjonsdata$FK_Forfirma_Dim,

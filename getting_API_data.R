@@ -4,8 +4,9 @@ library(jsonlite)
 library(tidyr)
 library(dplyr)
 library(grf)
+rm(list = ls())
 
-setwd("C:/Users/christian.thorjussen/Project Nortura/")
+setwd("C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk")
 
 #################################################################################################
 #Get postnummer data with geolocation at https://www.erikbolstad.no/postnummer-koordinatar/txt/#
@@ -14,7 +15,7 @@ setwd("C:/Users/christian.thorjussen/Project Nortura/")
 #First we only do some data handling 
 
 #Loading postnummer from Erik Bolstad and extracting coordinates (after som name editing)
-postnummer <- read.table('postnummer.csv', header=TRUE, sep="\t")
+postnummer <- read.table('C:/Users/christian.thorjussen/Project Nortura/postnummer.csv', header=TRUE, sep="\t")
 postnummer <- postnummer %>% 
   clean_names()
 #postnummer$poststad <- str_to_title(str_to_lower(postnummer$poststad))
@@ -22,7 +23,8 @@ postnummer <- subset(postnummer, select = c('postnr', 'lat', 'lon'))
 colnames(postnummer) <- c('postnummer', 'lat', 'lon')
 
 #Leverandoer.Rdata has changed encoding and stored as .csv. This is not necessary, the original Leverandoer.Rdata can be used
-lever_data <- read.csv("leverandoer.csv")
+lever_data <- load("Leverandoer.Rdata")
+lever_data <- Leverandoer
 leverandoer <- subset(lever_data, select = c('LeverandoerNr', 'Postnr'))
 colnames(leverandoer) <- c('id_producer', 'postnummer')
 rm(lever_data)
@@ -98,13 +100,13 @@ save(station_data, file = "station_data.Rdata")
 load('station_data.Rdata')
 
 #Connect id_producer and id_station to id_batch (innsettID) 
-load("raw data/Innsett.Rdata")
+load("Innsett.Rdata")
 innsett_to_producer <- subset(Innsett, select =  c('LeverandoerNr', 'PK_Innsett_Dim')) 
 colnames(innsett_to_producer) <- c('id_producer', 'id_batch')
 rm(Innsett)
 
 #Getting dates
-load("raw data/Produksjonsdata.Rdata")
+load("Produksjonsdata.Rdata")
 dates <- subset(Produksjonsdata, select = c('FK_Innsett_Dim', 'Dato'))
 colnames(dates) <- c( 'id_batch', 'prod_date')
 rm(Produksjonsdata)
@@ -124,7 +126,7 @@ data <- subset(data, as.Date(prod_date) <= as.Date("2023-12-01"))
 
 #The procedure is pretty much the same as above
 # Insert your own client ID here
-client_id <- '188729ee-d228-4e9e-8a3b-b57101f6aee3'
+client_id <- '4073afaf-cc83-4f12-94b2-2325262c9151'
 
 endpoint <- paste0("https://", client_id, "@frost.met.no/observations/v0.jsonld") #Specifying observations
 my_list <- unique(as.integer(data$id_batch)) #Get all batch IDs
@@ -178,7 +180,7 @@ temperature_data$date <- as.Date(temperature_data$date, origin = "1970-01-01")
 head(temperature_data)
 #Saving the results
 write.csv(temperature_data, "temperature_data.csv", row.names = FALSE)
-save(temperature_data, file = "Temperature.Rdata")
+save(temperature_data, file = "Temperature_update.Rdata")
 rm(results)
 rm(xs)
 
@@ -234,7 +236,7 @@ humidity_data$date <- as.Date(humidity_data$date, origin = "1970-01-01")
 #Looks ok?
 head(humidity_data)
 #Saving the results
-save(humidity_data, file = "Humidity.Rdata")
+save(humidity_data, file = "Humidity_update.Rdata")
 
 load("Humidity.Rdata")
 

@@ -16,7 +16,7 @@ wide_data$feed_name <- str_replace(wide_data$feed, "�", "o")
 wide_data$feed_name <- str_replace(wide_data$feed, "o?=", "aa")
 wide_data <- subset(wide_data, hybrid == "Ross 308")
 data <- wide_data
-
+names(data)[names(data) == 'aceties'] <- 'ascites'
 data$feed_name <- as.factor(data$feed_name)
 data$prod_type <- as.factor(data$prod_type)
 data$id_slaughterhouse <- as.factor(data$id_slaughterhouse)
@@ -29,13 +29,14 @@ data$frequent_month <- as.factor(data$frequent_month)
 #-----------------------------------------------------------------------------
 
 # Treatment feed 1
+names(data)[names(data) == 'feed'] <- 'feed_group'
+
 levels = 4  # Set the number of levels other than other
 data$feed_group = fct_lump_n(data$feed_name, n = levels, other_level = "other")
 table(data$feed_group)
-data$treatment_1 <-  ifelse(data$feed_group == "Kromat Kylling 2 Enkel u/k", 1, 0)
-data$treatment_2 <-  ifelse(data$feed_group == "Toppkylling Netto", 1, 0)
-data$treatment_3 <-  ifelse(data$feed_group == "Kromat Kylling 2 Leg u/k", 1, 0)
-data$treatment  <- ifelse(data$treatment_1 == 1 | data$treatment_2 == 1 | data$treatment_3 == 1 , 1, 0)
+
+data$treatment <-  ifelse(data$feed_group == "Toppkylling Netto", 1, 0)
+
 #--------------------------------------------------------------------------------
 # The first part of the script is to tune the base models and get hyperparameters
 #--------------------------------------------------------------------------------
@@ -43,20 +44,19 @@ data$treatment  <- ifelse(data$treatment_1 == 1 | data$treatment_2 == 1 | data$t
 formula_t <- ascites_prev ~  prod_type + frequent_month + id_slaughterhouse
 # Formula direct effect
 formula_d <- ascites_prev ~  prod_type + average_food + growth + sqr_growth + indoor_mean_maxtemp + frequent_month + climate_mean_temp + id_slaughterhouse + average_water + start_weight
-# Formula CATE
-formula_c <- ascites_prev ~  birds_m_sqr + prod_type + average_food + growth + sqr_growth + indoor_mean_maxtemp + indoor_mean_maxhumidity + kg_m_sqr + frequent_month + climate_mean_hum + climate_mean_temp + id_slaughterhouse + average_water + start_weight
 
-formula <- formula_d
+formula <- formula_t
 
-data_t <- subset(data, treatment_3 == 1)
+data_t <- subset(data, treatment == 1)
 data_c <- subset(data, treatment == 0) 
 independent_vars <- all.vars(formula)[-1]
-
+independent_vars
 label_t <- subset(data_t, select = c( as.character(update(formula, . ~ .)[[2]])))
 label_c <- subset(data_c, select = c( as.character(update(formula, . ~ .)[[2]])))
+label_c
+features_t <- data_t %>% select(all_of(independent_vars))
+features_c <- data_c %>% select(all_of(independent_vars))
 
-features_t <- data_t %>% select(independent_vars)
-features_c <- data_c %>% select(independent_vars)
 #look for features factor variables 
 factor_variables <- names(features_c)[sapply(features_c, is.factor)]
 #Create dummy variables from factor variables
@@ -78,13 +78,13 @@ data_matrix_c <- xgb.DMatrix(data = as.matrix(features_c), label = as.matrix(lab
 params <- list(
   objective = "reg:squarederror", 
   eta = 0.1,                      
-  max_depth = 3)
+  max_depth = 4)
 
 # Estimation of functions
 # Perform k-fold cross-validation
 cv_result <- xgb.cv(
   params = params,
-  data = xgb.DMatrix(data = as.matrix(features_t), label = as.matrix(label_t)),
+  data = xgb.DMatrix(data = as.matrix(features_c), label = as.matrix(label_c)),
   nfold = 5,                     # Number of folds
   verbose = TRUE,
   nrounds = 100

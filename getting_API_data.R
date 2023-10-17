@@ -14,7 +14,7 @@ setwd("C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk")
 
 #First we only do some data handling 
 
-#Loading postnummer from Erik Bolstad and extracting coordinates (after som name editing)
+#Loading postnummer from Erik Bolstad and extracting coordinates (after some name editing)
 postnummer <- read.table('C:/Users/christian.thorjussen/Project Nortura/postnummer.csv', header=TRUE, sep="\t")
 postnummer <- postnummer %>% 
   clean_names()
@@ -55,7 +55,7 @@ for (i in 1:length(my_list)) {
   # Build URL 
   endpoint <- paste0("https://", client_id, "@frost.met.no/sources/v0.jsonld")
   geometry <- paste0('nearest(POINT(',lon,' ',lat,'))')
-  nearestmaxcount <- 5 #Set the number of stations you want 
+  nearestmaxcount <- 6 #Set the number of stations you want 
   fields <- 'id, masl' #Set the fields you want, we only want the station ID and meter above sea level (we also get distance as default)
 
   url <- paste0(
@@ -103,13 +103,12 @@ load('station_data.Rdata')
 load("Innsett.Rdata")
 innsett_to_producer <- subset(Innsett, select =  c('LeverandoerNr', 'PK_Innsett_Dim')) 
 colnames(innsett_to_producer) <- c('id_producer', 'id_batch')
-rm(Innsett)
+
 
 #Getting dates
 load("Produksjonsdata.Rdata")
 dates <- subset(Produksjonsdata, select = c('FK_Innsett_Dim', 'Dato'))
 colnames(dates) <- c( 'id_batch', 'prod_date')
-rm(Produksjonsdata)
 
 #Merging
 farms_loc <- merge(innsett_to_producer, station_data, by = 'id_producer')
@@ -118,18 +117,19 @@ data <- merge(dates, farms_loc, by = 'id_batch')
 head(data)
 # The data frame data is very large since it has several weather stations for each production day per innett ID. This is becaues not all 
 # weather stations have the data we need, therefor we need to search more than one to increase our chance to get data. 
-# In the next step we are gonna loop all rows in this data frame to get meterological data
+# In the next step we are gonna loop all rows in this data frame to get meteorological data
 # the loop takes some time.
 
 #Shaving off a few dates 
-data <- subset(data, as.Date(prod_date) <= as.Date("2023-12-01"))
+data <- subset(data, as.Date(prod_date) <= as.Date("2023-08-01"))
 
 #The procedure is pretty much the same as above
 # Insert your own client ID here
-client_id <- '4073afaf-cc83-4f12-94b2-2325262c9151'
+client_id <- '188729ee-d228-4e9e-8a3b-b57101f6aee3'
 
 endpoint <- paste0("https://", client_id, "@frost.met.no/observations/v0.jsonld") #Specifying observations
 my_list <- unique(as.integer(data$id_batch)) #Get all batch IDs
+# my_list <- c(1,2,3)
 my_list <- sort(my_list)
 results <- list() 
 #Loop through all batches

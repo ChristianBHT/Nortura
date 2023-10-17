@@ -7,8 +7,8 @@ rm(list = ls())
 setwd("C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk")
 load("Produksjonsdata.Rdata")
 # The last date in original data set is 2021-06-10
-load('Temperature.Rdata')
-load("Humidity.Rdata")
+load('Temperature_update.Rdata')
+load("Humidity_update.Rdata")
 load("DaggamleKyllinger.Rdata")
 
 day_data <- data.frame(Produksjonsdata$PK_Produksjonsdata_Fak,
@@ -75,7 +75,7 @@ temp_data_selected <- temperature_data %>%
   group_by(id_batch, date) %>% # Group by id_batch and date
   slice_min(qualityCode) # Filter to keep only the best quality
 
-uniqe_temp_data <- distinct(temp_data_selected, id_batch, date, .keep_all = TRUE) #Removing duplicated entries  
+uniqe_temp_data <- distinct(temp_data_selected, id_batch, date, .keep_all = TRUE) #Removing duplicated entries  (if equal quality)
 temp_df <- subset(uniqe_temp_data, select = c('id_batch', 'date', 'temperature'))
 colnames(temp_df) <-  c('id_batch', 'date', 'out_temp')
 

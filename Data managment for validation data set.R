@@ -8,7 +8,6 @@ setwd("C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk")
 load("Produksjonsdata.Rdata")
 # The last date in original data set is 2021-06-10
 load('Temperature_update.Rdata')
-load("Humidity_update.Rdata")
 load("DaggamleKyllinger.Rdata")
 
 day_data <- data.frame(Produksjonsdata$PK_Produksjonsdata_Fak,
@@ -71,6 +70,8 @@ colnames(day_data) <- c('id_farmday',
 temperature_data$date <- as.character(temperature_data$date)
 
 #Find duplications and select those with best quality (temperature)
+temperature_data <- subset(temperature_data, timeOffset == 'PT0H')
+
 temp_data_selected <- temperature_data %>%
   group_by(id_batch, date) %>% # Group by id_batch and date
   slice_min(qualityCode) # Filter to keep only the best quality
@@ -79,52 +80,55 @@ uniqe_temp_data <- distinct(temp_data_selected, id_batch, date, .keep_all = TRUE
 temp_df <- subset(uniqe_temp_data, select = c('id_batch', 'date', 'temperature'))
 colnames(temp_df) <-  c('id_batch', 'date', 'out_temp')
 
-#Find duplications and select those with best quality (humiditiy)
-humi_data_selected <- humidity_data %>%
-  group_by(id_batch, date) %>% # Group by id_batch and date
-  slice_min(qualityCode) # Filter to keep only the best quality
-
-uniqe_humi_data <- distinct(humi_data_selected, id_batch, date, .keep_all = TRUE) #Removing duplicated entries  
-humi_df <- subset(uniqe_humi_data, select = c('id_batch', 'date', 'value'))
-colnames(humi_df) <-  c('id_batch', 'date', 'out_humidity')
-
 #I am using merge in such a way that we are only keeping observations with observations in both data set Y and X!
 analysis_df <- merge(day_data, temp_df, by = c('id_batch', 'date'))
-analysis_df <- merge(analysis_df, humi_df, by = c('id_batch', 'date'))
-
-rm(day_data, 
-   temp_df, 
-   Produksjonsdata, 
-   temperature_data, 
-   temp_data_selected, 
-   humi_data_selected, 
-   humi_df,
-   humidity_data)
-
+save(analysis_df, file = "data_without_feed_type.Rdata")
+# Koble på innsett informasjon, blant annet fortype
 load("Innsett.Rdata")
 batch_df <- subset(Innsett, select = c('PK_Innsett_Dim', 'Areal',  'Aceties', 'FK_TypeProduksjon_Dim', 'ForforbrukTotalt', 'LeverandoerNr'))
 colnames(batch_df) <- c('id_batch', 'area', 'aceties', 'type_of_prod', 'total_food_used', 'LeverandoerNr')
 analysis_df <- merge(analysis_df, batch_df, by = 'id_batch')
+rm(temperature_data)
 
+# Koble på fortype-navn
 load('Fortype.Rdata')
 load('Forblanding.Rdata')
 handling <- load('Handling.Rdata')
-handling <- subset(Handling, select = c('FK_Innsett_Dim', 'FK_Fortype_Dim', 'FK_Forblanding_Dim'))
-colnames(handling) <- c('id_batch', 'feed_type', 'feed_mix')
+handling <- subset(Handling, select = c('FK_Innsett_Dim', 'FK_Fortype_Dim', 'FK_Forblanding_Dim', "Mengde"))
+colnames(handling) <- c('id_batch', 'feed_type', 'feed_mix', "mengde")
 Forblanding <- subset(Forblanding, select = c('PK_Forblanding_Dim', 'Forblanding', 'FK_Fortype_Dim'))
 colnames(Forblanding) <- c('feed_mix', 'feed', 'feed_type') 
 feed_type <- subset(Forblanding, feed_type==2)
+write.csv2(feed_type, "feed_type.csv")
+# Manuell manipulering av data set slik at teite tegn endres til noe normalt
+feed_type <- read.csv2(file = "feed_type.csv")
+feed_type <- subset(feed_type, select = c("feed_mix", "feed", "feed_type"))
+
 feed <- subset(handling, feed_type == 2)
+result <- feed %>%
+  group_by(id_batch, feed_mix) %>%
+  summarise(total_amount = sum(mengde))
+# Only keep those who use one kind of growth feed
+unique_groups <- result %>%
+  group_by(id_batch) %>%
+  filter(n() == 1)
+
+feed <- unique_groups
 feed <- merge(feed, feed_type, by = 'feed_mix')
-feed <- subset(feed, select = c('id_batch', 'feed_mix', 'feed'))
-analysis_df <- merge(analysis_df, feed, by = 'id_batch')
-analysis_df$age <- as.numeric(analysis_df$age)
-# Remove duplicated rows
-analysis_df <- analysis_df[!duplicated(analysis_df), ]
+
+# Check number of observations (426949)
+load("data_without_feed_type.Rdata")
+df <- merge(analysis_df, feed, by = 'id_batch')
+df$age <- as.numeric(df$age)
+
+# Check that everyhing is correct
+df <- df[!duplicated(df), ]
+
 hybrid <- subset(DaggamleKyllinger, select = c("FK_Innsett_Dim", "Hybrid"))
 colnames(hybrid) <- c("id_batch", "hybrid")
 
-analysis_df <- merge(analysis_df, hybrid, by = 'id_batch')
+# Number of observations (162271)
+df <- merge(df, hybrid, by = 'id_batch')
 
-save(analysis_df,file="analysis_df_newdata.Rda")
+save(df,file="analysis_df_newdata.Rda")
 

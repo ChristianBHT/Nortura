@@ -7,7 +7,7 @@ library(forcats)
 library(boot)
 library(xgboost)
 
-setwd("C:/Users/christian.thorjussen/Project Nortura/Nytt")
+setwd("C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk")
 rm(list = ls())
 
 load("wide_data_for_analysis.Rda")

@@ -76,7 +76,7 @@ colnames(day_data) <- c('id_farmday',
                         'day_growth',
                         'water_by_food')
 
-df_filtered <- df[df$Date >= as.Date("2022-10-01"), ]
+
 temperature_data$date <- as.character(temperature_data$date)
 
 temperature_data <- subset(temperature_data, timeOffset == 'PT0H')
@@ -106,8 +106,8 @@ colnames(feed_data) <- c('id_batch', 'feed_type', 'feed_mix', 'mengde')
 load('Forblanding.Rdata')
 forblanding <- subset(Forblanding, select = c('PK_Forblanding_Dim', 'Forblanding'))
 colnames(forblanding) <- c('feed_mix', 'feed_name')
-feed_data <- merge(feed_data, forblanding, by = 'feed_mix')
-# Manual fixing name in Notepad ++
+# feed_data <- merge(feed_data, forblanding, by = 'feed_mix')
+# # Manual fixing name in Notepad ++
 # write.csv(feed_data, file = 'feed_data.csv')
 feed_data <- read.csv(file = 'feed_data.csv')
 feed_data <- subset(feed_data, select = -X)
@@ -136,7 +136,7 @@ colnames(hybrid) <- c("id_batch", "hybrid")
 
 analysis_df <- merge(analysis_df, hybrid, by = 'id_batch')
 max(analysis_df$date)
-# 2022-12-01
+# 2023-04-15
 save(analysis_df,file="analysis_df.Rda")
 
 #--------------step one complete now to more cleaning tasks----------------------
@@ -547,207 +547,203 @@ p3 <- p3 + geom_line(data=obs_df, aes(x,y)) + ggtitle(paste0("Batch id = ", i, "
 p3
 
 #Hubbard Chicken
-data_hubbard <- data[data$chicken_type == "Hubbard",]
-data_hubbard <- select(data_hubbard, c('id_batch', "weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
-                                       "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
-                                       "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
-                                       "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27", 
-                                       "weight_28", "weight_29", "weight_30", "weight_31", "weight_32", "weight_33", "weight_34",
-                                       "weight_35"))
-data_hubbard <- na.omit(data_hubbard)
-#Specifying a growth model
-model <- 'intercept =~  1*weight_0 + 1*weight_1 + 1*weight_2 + 1*weight_3 + 1*weight_4 + 1*weight_5 + 1*weight_6 + 1*weight_7 + 1*weight_8 + 1*weight_9 + 1*weight_10 + 1*weight_11 + 1*weight_12 + 1*weight_13 + 1*weight_14 + 1*weight_15 + 1*weight_16 + 1*weight_17 + 1*weight_18 + 1*weight_19 + 1*weight_20 + 1*weight_21 + 1*weight_22 + 1*weight_23 +  1*weight_24 + 1*weight_25 + 1*weight_26 + 1*weight_27 + 1*weight_28 + 1*weight_29 + 1*weight_30 + 1*weight_31 + 1*weight_32 + 1*weight_33 + 1*weight_34 + 1*weight_35   
-           growth =~  0*weight_0 + 1*weight_1 + 2*weight_2 + 3*weight_3 + 4*weight_4 + 5*weight_5 + 6*weight_6 + 7*weight_7 + 8*weight_8 + 9*weight_9 + 10*weight_10 + 11*weight_11 + 12*weight_12 + 13*weight_13 + 14*weight_14 + 15*weight_15 + 16*weight_16 + 17*weight_17 + 18*weight_18 + 19*weight_19 + 20*weight_20 + 21*weight_21 + 22*weight_22 + 23*weight_23 +24*weight_24 + 25*weight_25 + 26*weight_26 + 27*weight_27 + 28*weight_28 + 29*weight_29  + 30*weight_30  + 31*weight_31 + 32*weight_32 + 33*weight_33 + 34*weight_34 + 35*weight_35 
-            sqr_growth =~  0*weight_0 + 1*weight_1 + 4*weight_2 + 9*weight_3 + 16*weight_4 + 25*weight_5 + 36*weight_6 + 49*weight_7 + 64*weight_8 + 81*weight_9 + 100*weight_10 + 121*weight_11 + 144*weight_12 + 169*weight_13 + 196*weight_14 + 225*weight_15 + 256*weight_16 + 289*weight_17 + 324*weight_18 + 361*weight_19 + 400*weight_20 + 441*weight_21 + 484*weight_22 + 529*weight_23 +  576*weight_24 + 625*weight_25 + 676*weight_26 + 729*weight_27 + 784*weight_28 + + 841*weight_29  + 900*weight_30  + 961*weight_31  + 1024*weight_32 + 1089*weight_33 + 1156*weight_34 + 1225*weight_35' 
-
-fit <- growth(model, data=data_hubbard)
-summary(fit)
-# Predict the latent variables using the fitted model and the observed data
-parameters <- predict(fit, data_hubbard)
-data_hubbard <- cbind(data_hubbard, parameters)
-
-data_hubbard$id <- seq(nrow(data_hubbard))
-growth_data <- data_hubbard %>% select(id_batch, id, intercept, growth, sqr_growth)
-
-#Reshape to long data for plotting
-long_df <- reshape(data_hubbard,
-                   idvar = "id",
-                   timevar = "day",
-                   varying = c("weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
-                               "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
-                               "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
-                               "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27", 
-                               "weight_28", "weight_29", "weight_30", "weight_31", "weight_32", "weight_33", "weight_34",
-                               "weight_35"),
-                   v.names = c("weight"),
-                   direction = "long")
-long_df <- select(long_df, c('id', 'id_batch', 'day', 'weight'))
-plot_data <- merge(long_df, growth_data, by = "id")
-plot_data <- select(plot_data, c("id", "id_batch.y", "day", "weight", "intercept", "growth", "sqr_growth"))
-
-plot_data$age <- plot_data$day-1
-plot_data$estimate_weight <- plot_data$intercept + plot_data$growth*plot_data$age + plot_data$sqr_growth*plot_data$age^2
-data_hubbard_r2 <- plot_data %>% group_by(id_batch.y) %>% summarize(correlation = cor(weight, estimate_weight))
-data_hubbard_r2$r2 <- data_hubbard_r2$correlation^2
-
-colnames(data_hubbard_r2) <- c('id_batch', 'cor', 'r2')  
-data_hubbard <- merge(data_hubbard, data_hubbard_r2, by = 'id_batch')
-head(data_hubbard)
-
-i <- sample(plot_data$id_batch.y, 1)
-obs_df <- filter(plot_data, id_batch.y == i)
-obs_df <- obs_df[order(obs_df$day), ]
-obs_df$age <- obs_df$day - 1 
-rows <- nrow(obs_df)
-obs_df$x <- seq(0, rows, length.out = rows)
-obs_df$y <- obs_df$intercept[1] + obs_df$growth[1]*obs_df$x + obs_df$sqr_growth[1]*obs_df$x^2
+# data_hubbard <- data[data$chicken_type == "Hubbard",]
+# data_hubbard <- select(data_hubbard, c('id_batch', "weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
+#                                        "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
+#                                        "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
+#                                        "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27", 
+#                                        "weight_28", "weight_29", "weight_30", "weight_31", "weight_32", "weight_33", "weight_34",
+#                                        "weight_35"))
+# data_hubbard <- na.omit(data_hubbard)
+# #Specifying a growth model
+# model <- 'intercept =~  1*weight_0 + 1*weight_1 + 1*weight_2 + 1*weight_3 + 1*weight_4 + 1*weight_5 + 1*weight_6 + 1*weight_7 + 1*weight_8 + 1*weight_9 + 1*weight_10 + 1*weight_11 + 1*weight_12 + 1*weight_13 + 1*weight_14 + 1*weight_15 + 1*weight_16 + 1*weight_17 + 1*weight_18 + 1*weight_19 + 1*weight_20 + 1*weight_21 + 1*weight_22 + 1*weight_23 +  1*weight_24 + 1*weight_25 + 1*weight_26 + 1*weight_27 + 1*weight_28 + 1*weight_29 + 1*weight_30 + 1*weight_31 + 1*weight_32 + 1*weight_33 + 1*weight_34 + 1*weight_35   
+#            growth =~  0*weight_0 + 1*weight_1 + 2*weight_2 + 3*weight_3 + 4*weight_4 + 5*weight_5 + 6*weight_6 + 7*weight_7 + 8*weight_8 + 9*weight_9 + 10*weight_10 + 11*weight_11 + 12*weight_12 + 13*weight_13 + 14*weight_14 + 15*weight_15 + 16*weight_16 + 17*weight_17 + 18*weight_18 + 19*weight_19 + 20*weight_20 + 21*weight_21 + 22*weight_22 + 23*weight_23 +24*weight_24 + 25*weight_25 + 26*weight_26 + 27*weight_27 + 28*weight_28 + 29*weight_29  + 30*weight_30  + 31*weight_31 + 32*weight_32 + 33*weight_33 + 34*weight_34 + 35*weight_35 
+#             sqr_growth =~  0*weight_0 + 1*weight_1 + 4*weight_2 + 9*weight_3 + 16*weight_4 + 25*weight_5 + 36*weight_6 + 49*weight_7 + 64*weight_8 + 81*weight_9 + 100*weight_10 + 121*weight_11 + 144*weight_12 + 169*weight_13 + 196*weight_14 + 225*weight_15 + 256*weight_16 + 289*weight_17 + 324*weight_18 + 361*weight_19 + 400*weight_20 + 441*weight_21 + 484*weight_22 + 529*weight_23 +  576*weight_24 + 625*weight_25 + 676*weight_26 + 729*weight_27 + 784*weight_28 + + 841*weight_29  + 900*weight_30  + 961*weight_31  + 1024*weight_32 + 1089*weight_33 + 1156*weight_34 + 1225*weight_35' 
 # 
-p4 <- ggplot(data = obs_df, aes(x = age, y = weight)) + 
-  geom_line(lwd = 1, color = "black", linetype = "dashed") +
-  geom_point(shape = 21, fill = "white", size = 3) +
-  ylim(0, 2000) +
-  xlab("Age") + 
-  ylab("Weight") 
+# fit <- growth(model, data=data_hubbard)
+# summary(fit)
+# # Predict the latent variables using the fitted model and the observed data
+# parameters <- predict(fit, data_hubbard)
+# data_hubbard <- cbind(data_hubbard, parameters)
 # 
-p4 <- p4 + geom_line(data=obs_df, aes(x,y)) + ggtitle(paste0("Batch id = ", i, ". Hubbard"))
-p4
+# data_hubbard$id <- seq(nrow(data_hubbard))
+# growth_data <- data_hubbard %>% select(id_batch, id, intercept, growth, sqr_growth)
 # 
+# #Reshape to long data for plotting
+# long_df <- reshape(data_hubbard,
+#                    idvar = "id",
+#                    timevar = "day",
+#                    varying = c("weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
+#                                "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
+#                                "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
+#                                "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27", 
+#                                "weight_28", "weight_29", "weight_30", "weight_31", "weight_32", "weight_33", "weight_34",
+#                                "weight_35"),
+#                    v.names = c("weight"),
+#                    direction = "long")
+# long_df <- select(long_df, c('id', 'id_batch', 'day', 'weight'))
+# plot_data <- merge(long_df, growth_data, by = "id")
+# plot_data <- select(plot_data, c("id", "id_batch.y", "day", "weight", "intercept", "growth", "sqr_growth"))
+# 
+# plot_data$age <- plot_data$day-1
+# plot_data$estimate_weight <- plot_data$intercept + plot_data$growth*plot_data$age + plot_data$sqr_growth*plot_data$age^2
+# data_hubbard_r2 <- plot_data %>% group_by(id_batch.y) %>% summarize(correlation = cor(weight, estimate_weight))
+# data_hubbard_r2$r2 <- data_hubbard_r2$correlation^2
+# 
+# colnames(data_hubbard_r2) <- c('id_batch', 'cor', 'r2')  
+# data_hubbard <- merge(data_hubbard, data_hubbard_r2, by = 'id_batch')
+# head(data_hubbard)
+# 
+# i <- sample(plot_data$id_batch.y, 1)
+# obs_df <- filter(plot_data, id_batch.y == i)
+# obs_df <- obs_df[order(obs_df$day), ]
+# obs_df$age <- obs_df$day - 1 
+# rows <- nrow(obs_df)
+# obs_df$x <- seq(0, rows, length.out = rows)
+# obs_df$y <- obs_df$intercept[1] + obs_df$growth[1]*obs_df$x + obs_df$sqr_growth[1]*obs_df$x^2
+# # 
+# p4 <- ggplot(data = obs_df, aes(x = age, y = weight)) + 
+#   geom_line(lwd = 1, color = "black", linetype = "dashed") +
+#   geom_point(shape = 21, fill = "white", size = 3) +
+#   ylim(0, 2000) +
+#   xlab("Age") + 
+#   ylab("Weight") 
+# # 
+# p4 <- p4 + geom_line(data=obs_df, aes(x,y)) + ggtitle(paste0("Batch id = ", i, ". Hubbard"))
+# p4
+ 
 
 #McDonald's Chicken 
-data_mcdon <- data[data$chicken_type == "McDonalds",]
-data_mcdon <- select(data_mcdon, c('id_batch', "weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
-                                   "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
-                                   "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
-                                   "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27", 
-                                   "weight_28", "weight_29", "weight_30"))
-data_mcdon <- na.omit(data_mcdon)
-#Specifying a growth model
-model <- 'intercept =~  1*weight_0 + 1*weight_1 + 1*weight_2 + 1*weight_3 + 1*weight_4 + 1*weight_5 + 1*weight_6 + 1*weight_7 + 1*weight_8 + 1*weight_9 + 1*weight_10 + 1*weight_11 + 1*weight_12 + 1*weight_13 + 1*weight_14 + 1*weight_15 + 1*weight_16 + 1*weight_17 + 1*weight_18 + 1*weight_19 + 1*weight_20 + 1*weight_21 + 1*weight_22 + 1*weight_23 +  1*weight_24 + 1*weight_25 + 1*weight_26 + 1*weight_27 + 1*weight_28 + 1*weight_29 + 1*weight_30   
-           growth =~  0*weight_0 + 1*weight_1 + 2*weight_2 + 3*weight_3 + 4*weight_4 + 5*weight_5 + 6*weight_6 + 7*weight_7 + 8*weight_8 + 9*weight_9 + 10*weight_10 + 11*weight_11 + 12*weight_12 + 13*weight_13 + 14*weight_14 + 15*weight_15 + 16*weight_16 + 17*weight_17 + 18*weight_18 + 19*weight_19 + 20*weight_20 + 21*weight_21 + 22*weight_22 + 23*weight_23 +24*weight_24 + 25*weight_25 + 26*weight_26 + 27*weight_27 + 28*weight_28 + 29*weight_29  + 30*weight_30   
-            sqr_growth =~  0*weight_0 + 1*weight_1 + 4*weight_2 + 9*weight_3 + 16*weight_4 + 25*weight_5 + 36*weight_6 + 49*weight_7 + 64*weight_8 + 81*weight_9 + 100*weight_10 + 121*weight_11 + 144*weight_12 + 169*weight_13 + 196*weight_14 + 225*weight_15 + 256*weight_16 + 289*weight_17 + 324*weight_18 + 361*weight_19 + 400*weight_20 + 441*weight_21 + 484*weight_22 + 529*weight_23 +  576*weight_24 + 625*weight_25 + 676*weight_26 + 729*weight_27 + 784*weight_28 + 841*weight_29  + 900*weight_30' 
-
-fit <- growth(model, data=data_mcdon)
-summary(fit)
-
-# Predict the latent variables using the fitted model and the observed data
-parameters <- predict(fit, data_mcdon)
-data_mcdon <- cbind(data_mcdon, parameters)
-
-data_mcdon$id <- seq(nrow(data_mcdon))
-growth_data <- data_mcdon %>% select(id_batch, id, intercept, growth, sqr_growth)
-
-#Reshape to long data for plotting
-long_df <- reshape(data_mcdon,
-                   idvar = "id",
-                   timevar = "day",
-                   varying = c("weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
-                               "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
-                               "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
-                               "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27", 
-                               "weight_28", "weight_29", "weight_30"),
-                   v.names = c("weight"),
-                   direction = "long")
-long_df <- select(long_df, c('id', 'id_batch', 'day', 'weight'))
-plot_data <- merge(long_df, growth_data, by = "id")
-plot_data <- select(plot_data, c("id", "id_batch.y", "day", "weight", "intercept", "growth", "sqr_growth"))
-
-plot_data$age <- plot_data$day-1
-plot_data$estimate_weight <- plot_data$intercept + plot_data$growth*plot_data$age + plot_data$sqr_growth*plot_data$age^2
-data_mcdon_r2 <- plot_data %>% group_by(id_batch.y) %>% summarize(correlation = cor(weight, estimate_weight))
-data_mcdon_r2$r2 <- data_mcdon_r2$correlation^2
-head(data_mcdon_r2)
-colnames(data_mcdon_r2) <- c('id_batch', 'cor', 'r2')  
-data_mcdon <- merge(data_mcdon, data_mcdon_r2, by = 'id_batch')
-head(data_mcdon)
-
-i <- sample(plot_data$id_batch.y, 1)
-obs_df <- filter(plot_data, id_batch.y == i)
-obs_df <- obs_df[order(obs_df$day), ]
-obs_df$age <- obs_df$day - 1 
-rows <- nrow(obs_df)
-obs_df$x <- seq(0, rows, length.out = rows)
-obs_df$y <- obs_df$intercept[1] + obs_df$growth[1]*obs_df$x + obs_df$sqr_growth[1]*obs_df$x^2
-
-p5 <- ggplot(data = obs_df, aes(x = age, y = weight)) + 
-  geom_line(lwd = 1, color = "black", linetype = "dashed") +
-  geom_point(shape = 21, fill = "white", size = 3) +
-  ylim(0, 2000) +
-  xlab("Age") + 
-  ylab("Weight") 
+# data_mcdon <- data[data$chicken_type == "McDonalds",]
+# data_mcdon <- select(data_mcdon, c('id_batch', "weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
+#                                    "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
+#                                    "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
+#                                    "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27"))
+# data_mcdon <- na.omit(data_mcdon)
+# #Specifying a growth model
+# model <- 'intercept =~  1*weight_0 + 1*weight_1 + 1*weight_2 + 1*weight_3 + 1*weight_4 + 1*weight_5 + 1*weight_6 + 1*weight_7 + 1*weight_8 + 1*weight_9 + 1*weight_10 + 1*weight_11 + 1*weight_12 + 1*weight_13 + 1*weight_14 + 1*weight_15 + 1*weight_16 + 1*weight_17 + 1*weight_18 + 1*weight_19 + 1*weight_20 + 1*weight_21 + 1*weight_22 + 1*weight_23 +  1*weight_24 + 1*weight_25 + 1*weight_26 + 1*weight_27   
+#            growth =~  0*weight_0 + 1*weight_1 + 2*weight_2 + 3*weight_3 + 4*weight_4 + 5*weight_5 + 6*weight_6 + 7*weight_7 + 8*weight_8 + 9*weight_9 + 10*weight_10 + 11*weight_11 + 12*weight_12 + 13*weight_13 + 14*weight_14 + 15*weight_15 + 16*weight_16 + 17*weight_17 + 18*weight_18 + 19*weight_19 + 20*weight_20 + 21*weight_21 + 22*weight_22 + 23*weight_23 +24*weight_24 + 25*weight_25 + 26*weight_26 + 27*weight_27   
+#             sqr_growth =~  0*weight_0 + 1*weight_1 + 4*weight_2 + 9*weight_3 + 16*weight_4 + 25*weight_5 + 36*weight_6 + 49*weight_7 + 64*weight_8 + 81*weight_9 + 100*weight_10 + 121*weight_11 + 144*weight_12 + 169*weight_13 + 196*weight_14 + 225*weight_15 + 256*weight_16 + 289*weight_17 + 324*weight_18 + 361*weight_19 + 400*weight_20 + 441*weight_21 + 484*weight_22 + 529*weight_23 +  576*weight_24 + 625*weight_25 + 676*weight_26 + 729*weight_27' 
 # 
-p5 <- p5 + geom_line(data=obs_df, aes(x,y)) + ggtitle(paste0("Batch id = ", i, ". McDonalds-kylling"))
-p5
+# fit <- growth(model, data=data_mcdon)
+# summary(fit)
+# 
+# # Predict the latent variables using the fitted model and the observed data
+# parameters <- predict(fit, data_mcdon)
+# data_mcdon <- cbind(data_mcdon, parameters)
+# 
+# data_mcdon$id <- seq(nrow(data_mcdon))
+# growth_data <- data_mcdon %>% select(id_batch, id, intercept, growth, sqr_growth)
+# 
+# #Reshape to long data for plotting
+# long_df <- reshape(data_mcdon,
+#                    idvar = "id",
+#                    timevar = "day",
+#                    varying = c("weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
+#                                "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
+#                                "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
+#                                "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27", 
+#                                "weight_28", "weight_29", "weight_30"),
+#                    v.names = c("weight"),
+#                    direction = "long")
+# long_df <- select(long_df, c('id', 'id_batch', 'day', 'weight'))
+# plot_data <- merge(long_df, growth_data, by = "id")
+# plot_data <- select(plot_data, c("id", "id_batch.y", "day", "weight", "intercept", "growth", "sqr_growth"))
+# 
+# plot_data$age <- plot_data$day-1
+# plot_data$estimate_weight <- plot_data$intercept + plot_data$growth*plot_data$age + plot_data$sqr_growth*plot_data$age^2
+# data_mcdon_r2 <- plot_data %>% group_by(id_batch.y) %>% summarize(correlation = cor(weight, estimate_weight))
+# data_mcdon_r2$r2 <- data_mcdon_r2$correlation^2
+# head(data_mcdon_r2)
+# colnames(data_mcdon_r2) <- c('id_batch', 'cor', 'r2')  
+# data_mcdon <- merge(data_mcdon, data_mcdon_r2, by = 'id_batch')
+# head(data_mcdon)
+# 
+# i <- sample(plot_data$id_batch.y, 1)
+# obs_df <- filter(plot_data, id_batch.y == i)
+# obs_df <- obs_df[order(obs_df$day), ]
+# obs_df$age <- obs_df$day - 1 
+# rows <- nrow(obs_df)
+# obs_df$x <- seq(0, rows, length.out = rows)
+# obs_df$y <- obs_df$intercept[1] + obs_df$growth[1]*obs_df$x + obs_df$sqr_growth[1]*obs_df$x^2
+# 
+# p5 <- ggplot(data = obs_df, aes(x = age, y = weight)) + 
+#   geom_line(lwd = 1, color = "black", linetype = "dashed") +
+#   geom_point(shape = 21, fill = "white", size = 3) +
+#   ylim(0, 2000) +
+#   xlab("Age") + 
+#   ylab("Weight") 
+# # 
+# p5 <- p5 + geom_line(data=obs_df, aes(x,y)) + ggtitle(paste0("Batch id = ", i, ". McDonalds-kylling"))
+# p5
 
 #Unknown Chicken 
-data_u <- data[data$chicken_type == "Unknown",]
-data_u <- select(data_u, c('id_batch', "weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
-                           "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
-                           "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
-                           "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27"))
-data_u <- na.omit(data_u)
-#Specifying a growth model
-model <- 'intercept =~  1*weight_0 + 1*weight_1 + 1*weight_2 + 1*weight_3 + 1*weight_4 + 1*weight_5 + 1*weight_6 + 1*weight_7 + 1*weight_8 + 1*weight_9 + 1*weight_10 + 1*weight_11 + 1*weight_12 + 1*weight_13 + 1*weight_14 + 1*weight_15 + 1*weight_16 + 1*weight_17 + 1*weight_18 + 1*weight_19 + 1*weight_20 + 1*weight_21 + 1*weight_22 + 1*weight_23 +  1*weight_24 + 1*weight_25 + 1*weight_26 + 1*weight_27     
-           growth =~  0*weight_0 + 1*weight_1 + 2*weight_2 + 3*weight_3 + 4*weight_4 + 5*weight_5 + 6*weight_6 + 7*weight_7 + 8*weight_8 + 9*weight_9 + 10*weight_10 + 11*weight_11 + 12*weight_12 + 13*weight_13 + 14*weight_14 + 15*weight_15 + 16*weight_16 + 17*weight_17 + 18*weight_18 + 19*weight_19 + 20*weight_20 + 21*weight_21 + 22*weight_22 + 23*weight_23 +24*weight_24 + 25*weight_25 + 26*weight_26 + 27*weight_27      
-            sqr_growth =~  0*weight_0 + 1*weight_1 + 4*weight_2 + 9*weight_3 + 16*weight_4 + 25*weight_5 + 36*weight_6 + 49*weight_7 + 64*weight_8 + 81*weight_9 + 100*weight_10 + 121*weight_11 + 144*weight_12 + 169*weight_13 + 196*weight_14 + 225*weight_15 + 256*weight_16 + 289*weight_17 + 324*weight_18 + 361*weight_19 + 400*weight_20 + 441*weight_21 + 484*weight_22 + 529*weight_23 +  576*weight_24 + 625*weight_25 + 676*weight_26 + 729*weight_27' 
-
-fit <- growth(model, data=data_u)
-summary(fit)
-
-# Predict the latent variables using the fitted model and the observed data
-parameters <- predict(fit, data_u)
-data_u <- cbind(data_u, parameters)
-
-data_u$id <- seq(nrow(data_u))
-growth_data <- data_u %>% select(id_batch, id, intercept, growth, sqr_growth)
-
-#Reshape to long data for plotting
-long_df <- reshape(data_u,
-                   idvar = "id",
-                   timevar = "day",
-                   varying = c("weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
-                               "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
-                               "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
-                               "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27"),
-                   v.names = c("weight"),
-                   direction = "long")
-long_df <- select(long_df, c('id', 'id_batch', 'day', 'weight'))
-plot_data <- merge(long_df, growth_data, by = "id")
-plot_data <- select(plot_data, c("id", "id_batch.y", "day", "weight", "intercept", "growth", "sqr_growth"))
-
-plot_data$age <- plot_data$day-1
-plot_data$estimate_weight <- plot_data$intercept + plot_data$growth*plot_data$age + plot_data$sqr_growth*plot_data$age^2
-data_u_r2 <- plot_data %>% group_by(id_batch.y) %>% summarize(correlation = cor(weight, estimate_weight))
-data_u_r2$r2 <- data_u_r2$correlation^2
-head(data_u_r2)
-colnames(data_u_r2) <- c('id_batch', 'cor', 'r2')  
-data_u <- merge(data_u, data_u_r2, by = 'id_batch')
-head(data_u)
-
-i <- sample(plot_data$id_batch.y, 1)
-obs_df <- filter(plot_data, id_batch.y == i)
-obs_df <- obs_df[order(obs_df$day), ]
-obs_df$age <- obs_df$day - 1 
-rows <- nrow(obs_df)
-obs_df$x <- seq(0, rows, length.out = rows)
-obs_df$y <- obs_df$intercept[1] + obs_df$growth[1]*obs_df$x + obs_df$sqr_growth[1]*obs_df$x^2
-
-p6 <- ggplot(data = obs_df, aes(x = age, y = weight)) + 
-  geom_line(lwd = 1, color = "black", linetype = "dashed") +
-  geom_point(shape = 21, fill = "white", size = 3) +
-  ylim(0, 2000) +
-  xlab("Age") + 
-  ylab("Weight") 
+# data_u <- data[data$chicken_type == "Unknown",]
+# data_u <- select(data_u, c('id_batch', "weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
+#                            "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
+#                            "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
+#                            "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27"))
+# data_u <- na.omit(data_u)
+# #Specifying a growth model
+# model <- 'intercept =~  1*weight_0 + 1*weight_1 + 1*weight_2 + 1*weight_3 + 1*weight_4 + 1*weight_5 + 1*weight_6 + 1*weight_7 + 1*weight_8 + 1*weight_9 + 1*weight_10 + 1*weight_11 + 1*weight_12 + 1*weight_13 + 1*weight_14 + 1*weight_15 + 1*weight_16 + 1*weight_17 + 1*weight_18 + 1*weight_19 + 1*weight_20 + 1*weight_21 + 1*weight_22 + 1*weight_23 +  1*weight_24 + 1*weight_25 + 1*weight_26 + 1*weight_27     
+#            growth =~  0*weight_0 + 1*weight_1 + 2*weight_2 + 3*weight_3 + 4*weight_4 + 5*weight_5 + 6*weight_6 + 7*weight_7 + 8*weight_8 + 9*weight_9 + 10*weight_10 + 11*weight_11 + 12*weight_12 + 13*weight_13 + 14*weight_14 + 15*weight_15 + 16*weight_16 + 17*weight_17 + 18*weight_18 + 19*weight_19 + 20*weight_20 + 21*weight_21 + 22*weight_22 + 23*weight_23 +24*weight_24 + 25*weight_25 + 26*weight_26 + 27*weight_27      
+#             sqr_growth =~  0*weight_0 + 1*weight_1 + 4*weight_2 + 9*weight_3 + 16*weight_4 + 25*weight_5 + 36*weight_6 + 49*weight_7 + 64*weight_8 + 81*weight_9 + 100*weight_10 + 121*weight_11 + 144*weight_12 + 169*weight_13 + 196*weight_14 + 225*weight_15 + 256*weight_16 + 289*weight_17 + 324*weight_18 + 361*weight_19 + 400*weight_20 + 441*weight_21 + 484*weight_22 + 529*weight_23 +  576*weight_24 + 625*weight_25 + 676*weight_26 + 729*weight_27' 
 # 
-p6 <- p6 + geom_line(data=obs_df, aes(x,y)) + ggtitle(paste0("Batch id = ", i, ". McDonalds-kylling"))
-p6
+# fit <- growth(model, data=data_u)
+# summary(fit)
+# 
+# # Predict the latent variables using the fitted model and the observed data
+# parameters <- predict(fit, data_u)
+# data_u <- cbind(data_u, parameters)
+# 
+# data_u$id <- seq(nrow(data_u))
+# growth_data <- data_u %>% select(id_batch, id, intercept, growth, sqr_growth)
+# 
+# #Reshape to long data for plotting
+# long_df <- reshape(data_u,
+#                    idvar = "id",
+#                    timevar = "day",
+#                    varying = c("weight_0", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
+#                                "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", "weight_13", 
+#                                "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", "weight_19", "weight_20", 
+#                                "weight_21", "weight_22", "weight_23", "weight_24", "weight_25", "weight_26", "weight_27"),
+#                    v.names = c("weight"),
+#                    direction = "long")
+# long_df <- select(long_df, c('id', 'id_batch', 'day', 'weight'))
+# plot_data <- merge(long_df, growth_data, by = "id")
+# plot_data <- select(plot_data, c("id", "id_batch.y", "day", "weight", "intercept", "growth", "sqr_growth"))
+# 
+# plot_data$age <- plot_data$day-1
+# plot_data$estimate_weight <- plot_data$intercept + plot_data$growth*plot_data$age + plot_data$sqr_growth*plot_data$age^2
+# data_u_r2 <- plot_data %>% group_by(id_batch.y) %>% summarize(correlation = cor(weight, estimate_weight))
+# data_u_r2$r2 <- data_u_r2$correlation^2
+# head(data_u_r2)
+# colnames(data_u_r2) <- c('id_batch', 'cor', 'r2')  
+# data_u <- merge(data_u, data_u_r2, by = 'id_batch')
+# head(data_u)
+# 
+# i <- sample(plot_data$id_batch.y, 1)
+# obs_df <- filter(plot_data, id_batch.y == i)
+# obs_df <- obs_df[order(obs_df$day), ]
+# obs_df$age <- obs_df$day - 1 
+# rows <- nrow(obs_df)
+# obs_df$x <- seq(0, rows, length.out = rows)
+# obs_df$y <- obs_df$intercept[1] + obs_df$growth[1]*obs_df$x + obs_df$sqr_growth[1]*obs_df$x^2
+# 
+# p6 <- ggplot(data = obs_df, aes(x = age, y = weight)) + 
+#   geom_line(lwd = 1, color = "black", linetype = "dashed") +
+#   geom_point(shape = 21, fill = "white", size = 3) +
+#   ylim(0, 2000) +
+#   xlab("Age") + 
+#   ylab("Weight") 
+# # 
+# p6 <- p6 + geom_line(data=obs_df, aes(x,y)) + ggtitle(paste0("Batch id = ", i, ". McDonalds-kylling"))
+# p6
 
 
 growth_data <- rbind(select(data_proc, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')), 
                      select(data_grill, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')), 
-                     select(data_gaarden, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')), 
-                     select(data_mcdon, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')),
-                     select(data_hubbard, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')),
-                     select(data_u, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')))
+                     select(data_gaarden, c("id_batch", "intercept", "growth", "sqr_growth", 'cor', 'r2')))
 
 data <- merge(long_data, growth_data, by = "id_batch")
 
@@ -882,7 +878,7 @@ load('DaggamleKyllinger.Rdata')
 hybrid <- subset(DaggamleKyllinger, select = c('FK_Innsett_Dim', 'Hybrid'))
 colnames(hybrid) <- c('id_batch', 'hybrid')
 analytic_data <- merge(analytic_data, hybrid, by = 'id_batch')
-
+# colnames(analytic_data)[colnames(analytic_data) == "hybrid.x"] <- "hybrid"
 long_data <- subset(analytic_data, select = c('id_batch',
                                               'age',              
                                               'feed_name', #Treatment

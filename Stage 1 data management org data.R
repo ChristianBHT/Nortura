@@ -882,7 +882,7 @@ load('raw data/DaggamleKyllinger.Rdata')
 hybrid <- subset(DaggamleKyllinger, select = c('FK_Innsett_Dim', 'Hybrid'))
 colnames(hybrid) <- c('id_batch', 'hybrid')
 analytic_data <- merge(analytic_data, hybrid, by = 'id_batch')
-
+colnames(analytic_data)[colnames(analytic_data) == "hybrid.x"] <- "hybrid"
 long_data <- subset(analytic_data, select = c('id_batch',
                                               'age',              
                                               'feed_name', #Treatment

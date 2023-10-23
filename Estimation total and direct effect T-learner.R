@@ -9,7 +9,8 @@ library(xgboost)
 
 setwd("C:/Users/christian.thorjussen/Project Nortura/")
 rm(list = ls())
-
+load("Nytt datauttrekk/wide_newdata_for_analysis.Rda")
+newdata <- wide_data
 load("wide_data_for_analysis.Rda")
 wide_data$feed_name <- str_replace(wide_data$feed_name, "�", "aa")
 wide_data$feed_name <- str_replace(wide_data$feed_name, "�", "o")
@@ -20,7 +21,6 @@ data <- wide_data
 data$feed_name <- as.factor(data$feed_name)
 data$prod_type <- as.factor(data$prod_type)
 data$id_slaughterhouse <- as.factor(data$id_slaughterhouse)
-data$leverandoer_nr <- data$leverandoer_nr
 data$ascites_prev <- data$ascites/data$n_of_chicken
 
 data$frequent_month <- as.factor(data$frequent_month)
@@ -47,9 +47,9 @@ formula_d <- ascites_prev ~  prod_type + average_food + growth + sqr_growth + in
 # Formula CATE
 formula_c <- ascites_prev ~  birds_m_sqr + prod_type + average_food + growth + sqr_growth + indoor_mean_maxtemp + indoor_mean_maxhumidity + kg_m_sqr + frequent_month + climate_mean_hum + climate_mean_temp + id_slaughterhouse + average_water + start_weight
 
-formula <- formula_d
+formula <- formula_t
 
-data_t <- subset(data, treatment_3 == 1)
+data_t <- subset(data, treatment_2 == 1)
 data_c <- subset(data, treatment == 0) 
 independent_vars <- all.vars(formula)[-1]
 
@@ -79,13 +79,13 @@ data_matrix_c <- xgb.DMatrix(data = as.matrix(features_c), label = as.matrix(lab
 params <- list(
   objective = "reg:squarederror", 
   eta = 0.1,                      
-  max_depth = 3)
+  max_depth = 1)
 
 # Estimation of functions
 # Perform k-fold cross-validation
 cv_result <- xgb.cv(
   params = params,
-  data = xgb.DMatrix(data = as.matrix(features_t), label = as.matrix(label_t)),
+  data = data_matrix_c,
   nfold = 5,                     # Number of folds
   verbose = TRUE,
   nrounds = 100
@@ -137,6 +137,7 @@ T_learner_total <- boot(data=data,
                         max_depth_c = 4,
                         nrounds_c = 10)
 T_total_boot_feed1 <- T_learner_total$t
+hist(T_total_boot_feed1[,1])
 save(T_total_boot_feed1,file="C:/broiler_acites/ascites_case/Results/T_total_boot_feed1.Rda")
 
 #------------------------------------------------------------------

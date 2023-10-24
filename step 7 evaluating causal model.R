@@ -12,17 +12,14 @@ setwd("C:/Users/christian.thorjussen/Project Nortura/")
 rm(list = ls())
 
 load("wide_data_for_analysis.Rda")
-wide_data$feed_name <- str_replace(wide_data$feed_name, "�", "aa")
-wide_data$feed_name <- str_replace(wide_data$feed_name, "�", "o")
-wide_data$feed_name <- str_replace(wide_data$feed_name, "o?=", "aa")
+
 wide_data <- subset(wide_data, hybrid == "Ross 308")
 data <- wide_data
 
 data$feed_name <- as.factor(data$feed_name)
 data$prod_type <- as.factor(data$prod_type)
 data$id_slaughterhouse <- as.factor(data$id_slaughterhouse)
-data$leverandoer_nr <- data$leverandoer_nr
-data$ascites_prev <- 1000*data$ascites/data$n_of_chicken
+data$ascites_prev <- 1000*data$aceties/data$n_of_chicken
 data$frequent_month <- as.factor(data$frequent_month)
 data$treatment <- sample(0:1, nrow(data), replace = TRUE)
 # Formula total effect
@@ -30,7 +27,6 @@ formula_t <- ascites_prev ~  prod_type + frequent_month + id_slaughterhouse
 # Formula direct effect
 formula_d <- ascites_prev ~  prod_type + average_food + growth + sqr_growth + indoor_mean_maxtemp + frequent_month + climate_mean_temp + id_slaughterhouse + average_water + start_weight
 
-data$treatment <- sample(0:1, nrow(data), replace = TRUE)
 N <- nrow(data) # Bootstrap obs per resampling
 R = 1000 #Number of bootstrap replica
 
@@ -52,7 +48,7 @@ T_learner_total <- boot(data=data,
                         nrounds_c = 10)
 T_total_boot_fake <- T_learner_total$t
 hist(T_total_boot_fake[,1])
-save(T_total_boot_feed1,file="C:/broiler_acites/ascites_case/Results/T_total_boot_fake.Rda")
+save(T_total_boot_fake,file="C:/broiler_acites/ascites_case/Results/T_total_boot_fake.Rda")
 
 data$treatment <- sample(0:1, nrow(data), replace = TRUE)
 N <- nrow(data) # Bootstrap obs per resampling
@@ -120,5 +116,5 @@ hist(T_total_boot_out_random[,1])
 save(T_total_boot_out_random,file="C:/broiler_acites/ascites_case/Results/T_total_boot_out_random.Rda")
 
 
-
+load("C:/broiler_acites/ascites_case/Results/T_total_boot_fake.Rda")
 

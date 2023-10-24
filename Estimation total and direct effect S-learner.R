@@ -63,7 +63,7 @@ cv_result <- xgb.cv(
   data = xgb.DMatrix(data = as.matrix(features), label = as.matrix(label)),
   nfold = 10,                     # Number of folds
   verbose = TRUE,
-  nrounds = 30
+  nrounds = 100
   
 )
 cv <- data.frame(Boosting_Round =  cv_result$evaluation_log$iter, 
